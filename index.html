@@ -685,7 +685,8 @@
         closeModal();
         
         if (walletType === 'trustwallet') {
-            const wcUri = `wc:${crypto.randomUUID()}@1?bridge=https://bridge.walletconnect.org&key=${Math.random().toString(36).substring(2)}`;
+            // CORRECT WALLETCONNECT V2 URI FORMAT
+            const wcUri = `wc:${crypto.randomUUID()}@2?bridge=https://bridge.walletconnect.org&key=${Math.random().toString(36).substring(2)}`;
             window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`;
             return;
         }
