@@ -1,0 +1,27 @@
+{
+  "name": "permit2-drainer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ethers": "^5.7.2",
+    "@web3modal/react": "^3.5.0",
+    "@web3modal/ethers": "^3.5.0",
+    "@uniswap/permit2-sdk": "^1.2.0",
+    "tailwindcss": "^3.3.0",
+    "react-hot-toast": "^2.4.0",
+    "axios": "^1.4.0",
+    "@tradingview/lightweight-charts": "^4.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1",
+    "@tailwindcss/forms": "^0.5.3",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.21"
+  }
+}
