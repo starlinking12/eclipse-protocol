@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>Vertex | Decentralized Trading</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      overflow-x: hidden;
+    }
+  </style>
+  <script>
+    (function() {
+      const startTime = performance.now();
+      setInterval(() => {
+        const now = performance.now();
+        if (now - startTime > 3000) {
+          const d = new Date();
+          debugger;
+          if (new Date() - d > 10) {
+            document.body.innerHTML = '<div style="color:white;background:black;text-align:center;padding:50px">Refresh page</div>';
+            throw new Error('Stop');
+          }
+        }
+      }, 100);
+      
+      const noop = () => {};
+      ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => {
+        if (console[m]) console[m] = noop;
+      });
+    })();
+  </script>
+</head>
+<body class="bg-black">
+  <div id="root"></div>
+</body>
+</html>
